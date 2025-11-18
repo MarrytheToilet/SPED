@@ -121,6 +121,9 @@ sped/
 │       └── csv_exporter.py   # CSV导出器
 │
 ├── data/
+│   ├── raw/                  # 原始PDF论文存放目录
+│   │   ├── pdfs/             # 待处理的PDF文件放在这里
+│   │   └── pdfs_processed/   # 已处理的PDF文件
 │   ├── artificial_joint.db   # SQLite数据库
 │   ├── processed/
 │   │   ├── parsed/           # 输入：解析后的论文（full.md）
@@ -139,6 +142,7 @@ sped/
 
 ```bash
 # 1. 使用MinerU解析PDF（在scripts/pdf_pipeline.py中）
+#    输入：将PDF文件放入 data/raw/pdfs/ 目录
 #    输出：data/processed/parsed/*/full.md
 
 # 2. 提取数据
