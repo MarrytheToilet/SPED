@@ -75,11 +75,15 @@ log/
 *.sqlite3
 *.db-journal
 
-# Data files (uncomment if needed)
-# data/
-# *.csv
-# *.xlsx
-# *.json
+# Data files - ignore contents but keep structure
+data/raw/*
+data/processed/*
+data/uploads/*
+data/exports/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/uploads/.gitkeep
+!data/exports/.gitkeep
 
 # Documentation builds
 docs/_build/
