@@ -1,0 +1,593 @@
+#!/usr/bin/env python3
+"""
+人工关节材料数据提取系统 - 统一菜单
+
+整合数据提取、数据库管理、测试等所有功能
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# ANSI颜色代码
+BLUE = '\033[94m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+RED = '\033[91m'
+CYAN = '\033[96m'
+MAGENTA = '\033[95m'
+BOLD = '\033[1m'
+END = '\033[0m'
+
+
+def clear_screen():
+    """清屏"""
+    os.system('clear' if os.name != 'nt' else 'cls')
+
+
+def print_header():
+    """打印标题"""
+    print()
+    print(f"{BLUE}{BOLD}{'='*80}{END}")
+    print(f"{BLUE}{BOLD}           人工关节材料数据提取系统 - 统一菜单           {END}")
+    print(f"{BLUE}{BOLD}{'='*80}{END}")
+    print()
+
+
+def print_main_menu():
+    """打印主菜单"""
+    print(f"{GREEN}{BOLD}主菜单：{END}")
+    print()
+    print(f"  {CYAN}【数据提取】{END}")
+    print(f"    {BOLD}1.{END} 📊 测试系统配置")
+    print(f"    {BOLD}2.{END} 📝 提取单个论文（交互式选择）")
+    print(f"    {BOLD}3.{END} 🚀 批量提取所有论文")
+    print(f"    {BOLD}4.{END} 🧪 测试单条数据提取")
+    print()
+    print(f"  {CYAN}【数据库管理】{END}")
+    print(f"    {BOLD}5.{END} 💾 数据库管理工具（交互式菜单）")
+    print(f"    {BOLD}6.{END} 📥 快速：批量导入JSON到数据库")
+    print(f"    {BOLD}7.{END} 📤 快速：导出所有CSV格式")
+    print(f"    {BOLD}8.{END} 📊 快速：查看数据库统计")
+    print(f"    {BOLD}9.{END} 📑 快速：导出Excel多表（按schema组织）")
+    print()
+    print(f"  {CYAN}【系统工具】{END}")
+    print(f"    {BOLD}10.{END} 📚 查看使用指南")
+    print(f"    {BOLD}11.{END} 📋 查看系统状态")
+    print(f"    {BOLD}12.{END} 🔍 查看提取日志")
+    print()
+    print(f"    {BOLD}0.{END} 🚪 退出")
+    print()
+
+
+def run_extract_test():
+    """测试系统配置"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}测试系统配置{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python extract.py test")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_extract_single():
+    """提取单个论文"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}提取单个论文{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python extract.py single")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_extract_batch():
+    """批量提取"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}批量提取所有论文{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    print(f"{YELLOW}⚠️  这将提取所有未处理的论文，可能需要较长时间{END}\n")
+    confirm = input(f"{GREEN}确认开始批量提取？(y/n): {END}")
+    
+    if confirm.lower() == 'y':
+        os.system("python extract.py batch")
+    else:
+        print(f"\n{YELLOW}已取消{END}")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_test_single_extraction():
+    """测试单条数据提取"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}测试单条数据提取{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    # 列出可用论文
+    parsed_dir = Path("data/processed/parsed")
+    if not parsed_dir.exists():
+        print(f"{RED}❌ 未找到解析后的论文目录{END}")
+        input(f"\n{GREEN}按回车键返回...{END}")
+        return
+    
+    papers = []
+    for paper_dir in parsed_dir.iterdir():
+        if paper_dir.is_dir():
+            full_md = paper_dir / "full.md"
+            if full_md.exists():
+                papers.append(paper_dir.name)
+    
+    if not papers:
+        print(f"{RED}❌ 没有找到可用的论文{END}")
+        input(f"\n{GREEN}按回车键返回...{END}")
+        return
+    
+    print(f"{GREEN}可用论文列表：{END}\n")
+    for i, paper in enumerate(papers[:20], 1):
+        print(f"  {i}. {paper}")
+    
+    if len(papers) > 20:
+        print(f"\n{YELLOW}  ... 还有 {len(papers)-20} 篇论文{END}")
+    
+    print(f"\n{YELLOW}提示: 将随机选择一篇论文进行测试提取{END}")
+    
+    try:
+        choice = input(f"\n{GREEN}输入论文编号 (1-{min(20, len(papers))}) 或回车随机选择: {END}")
+        
+        if choice.strip():
+            idx = int(choice) - 1
+            if 0 <= idx < len(papers):
+                selected = papers[idx]
+            else:
+                print(f"{RED}无效选择，随机选择一篇{END}")
+                import random
+                selected = random.choice(papers)
+        else:
+            import random
+            selected = random.choice(papers)
+        
+        print(f"\n{CYAN}选择的论文: {selected}{END}\n")
+        
+        # 执行测试
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent))
+        
+        from src.agents.llm_agent import LLMExtractionAgent
+        from loguru import logger
+        
+        # 配置简洁日志
+        logger.remove()
+        logger.add(sys.stderr, level="INFO")
+        
+        agent = LLMExtractionAgent()
+        
+        paper_path = parsed_dir / selected / "full.md"
+        
+        print(f"{BLUE}开始测试提取...{END}\n")
+        
+        result = agent.process({
+            "paper_id": selected,
+            "full_text_path": str(paper_path)
+        })
+        
+        print(f"\n{GREEN}{'='*80}{END}")
+        print(f"{GREEN}✅ 测试提取完成！{END}")
+        print(f"{GREEN}{'='*80}{END}\n")
+        
+        print(f"论文: {result.get('paper_id', 'N/A')}")
+        print(f"Data ID: {result.get('dataid', 'N/A')}")
+        print(f"提取记录数: {result.get('count', 0)}")
+        
+        if result.get('records'):
+            print(f"\n{CYAN}记录预览：{END}\n")
+            for i, record in enumerate(result['records'][:3], 1):
+                non_null = sum(1 for v in record.values() if v and v != 'null')
+                print(f"  记录 {i}:")
+                print(f"    数据标识: {record.get('数据标识', 'N/A')[:50]}...")
+                print(f"    应用部位: {record.get('应用部位', 'N/A')}")
+                print(f"    非空字段: {non_null}/28")
+                print()
+            
+            if len(result['records']) > 3:
+                print(f"  {YELLOW}... 还有 {len(result['records']) - 3} 条记录{END}")
+        
+    except KeyboardInterrupt:
+        print(f"\n{YELLOW}已取消{END}")
+    except Exception as e:
+        print(f"\n{RED}❌ 错误: {e}{END}")
+        import traceback
+        traceback.print_exc()
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_database_menu():
+    """打开数据库管理菜单"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}启动数据库管理工具{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python database.py")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_quick_import():
+    """快速批量导入"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}批量导入JSON到数据库{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    extracted_dir = Path("data/processed/extracted")
+    
+    if not extracted_dir.exists():
+        print(f"{RED}❌ 未找到extracted目录{END}")
+        input(f"\n{GREEN}按回车键返回...{END}")
+        return
+    
+    json_files = list(extracted_dir.glob("*.json"))
+    
+    if not json_files:
+        print(f"{YELLOW}⚠️  extracted目录中没有JSON文件{END}")
+        input(f"\n{GREEN}按回车键返回...{END}")
+        return
+    
+    print(f"{GREEN}找到 {len(json_files)} 个JSON文件{END}\n")
+    
+    confirm = input(f"{GREEN}确认导入？(y/n): {END}")
+    
+    if confirm.lower() == 'y':
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent))
+        
+        from src.database import DatabaseManager
+        from loguru import logger
+        
+        logger.remove()
+        logger.add(sys.stderr, level="INFO")
+        
+        db = DatabaseManager()
+        
+        total_success = 0
+        total_failed = 0
+        
+        print(f"\n{BLUE}开始导入...{END}\n")
+        
+        for i, json_file in enumerate(json_files, 1):
+            print(f"[{i}/{len(json_files)}] {json_file.name} ... ", end='', flush=True)
+            result = db.insert_from_json(json_file)
+            total_success += result['success']
+            total_failed += result['failed']
+            print(f"✅ {result['success']} 条, ❌ {result['failed']} 条")
+        
+        print(f"\n{GREEN}{'='*80}{END}")
+        print(f"{GREEN}导入完成！{END}")
+        print(f"{GREEN}{'='*80}{END}\n")
+        print(f"总计成功: {total_success} 条")
+        print(f"总计失败: {total_failed} 条")
+    else:
+        print(f"\n{YELLOW}已取消{END}")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_quick_export():
+    """快速导出CSV"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}导出所有CSV格式（展开JSON）{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    
+    from src.database.csv_exporter import export_all_formats
+    from loguru import logger
+    
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
+    
+    print(f"{CYAN}模式: 完全展开JSON字段为独立列{END}")
+    print(f"{BLUE}开始导出...{END}\n")
+    
+    export_all_formats(Path("data/exports"), expand_json=True)
+    
+    print(f"\n{GREEN}{'='*80}{END}")
+    print(f"{GREEN}导出完成！{END}")
+    print(f"{GREEN}{'='*80}{END}\n")
+    print(f"文件保存在: data/exports/")
+    print(f"\n{CYAN}导出的文件：{END}")
+    print(f"  • full_data_expanded_*.csv - 完整数据（展开JSON）⭐")
+    print(f"  • full_data_raw_*.csv - 完整数据（原始JSON）")
+    print(f"  • summary_*.csv - 数据摘要")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_quick_excel_export():
+    """快速导出Excel多表"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}导出Excel多表（按schema组织）{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    
+    from src.database.excel_exporter import export_excel_all_tables
+    from loguru import logger
+    
+    logger.remove()
+    logger.add(sys.stderr, level="INFO")
+    
+    print(f"{CYAN}说明: 将按照schema定义的表结构，导出多个sheet的Excel文件{END}")
+    print(f"{CYAN}每个sheet对应schema中的一个表{END}")
+    print(f"{BLUE}开始导出...{END}\n")
+    
+    success = export_excel_all_tables(Path("data/exports"), filter_empty=True)
+    
+    if success:
+        print(f"\n{GREEN}{'='*80}{END}")
+        print(f"{GREEN}导出完成！{END}")
+        print(f"{GREEN}{'='*80}{END}\n")
+        print(f"文件保存在: data/exports/")
+        print(f"\n{CYAN}特点：{END}")
+        print(f"  • 📊 多个sheet，每个对应一个数据表")
+        print(f"  • 🎯 按照schema.json定义的结构组织")
+        print(f"  • 🗑️  自动过滤没有数据的空表")
+        print(f"  • 🎨 表头样式美化，自动调整列宽")
+    else:
+        print(f"\n{RED}{'='*80}{END}")
+        print(f"{RED}导出失败！请查看日志{END}")
+        print(f"{RED}{'='*80}{END}")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_quick_stats():
+    """快速查看统计"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}数据库统计信息{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    
+    from src.database import DatabaseManager
+    from loguru import logger
+    
+    logger.remove()
+    
+    db = DatabaseManager()
+    stats = db.get_statistics()
+    
+    if stats:
+        print(f"📊 总记录数: {stats.get('total_records', 0)}")
+        print(f"📝 有应用部位的记录: {stats.get('with_application', 0)}")
+        print(f"📄 不同论文数: {stats.get('unique_papers', 0)}")
+        print(f"🕐 最近更新: {stats.get('last_updated', 'N/A')}")
+        
+        size_mb = stats.get('database_size', 0) / 1024 / 1024
+        print(f"💾 数据库大小: {size_mb:.2f} MB")
+    else:
+        print(f"{RED}❌ 无法获取统计信息{END}")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def view_guide():
+    """查看使用指南"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}使用指南{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    readme = Path("README.md")
+    quick_guide = Path("docs/QUICK_USAGE_GUIDE.md")
+    
+    if quick_guide.exists():
+        print(f"{GREEN}显示快速使用指南...{END}\n")
+        os.system(f"cat {quick_guide} | head -80")
+        print(f"\n{YELLOW}完整指南请查看: {quick_guide}{END}")
+    elif readme.exists():
+        print(f"{GREEN}显示README...{END}\n")
+        os.system(f"cat {readme} | head -80")
+        print(f"\n{YELLOW}完整文档请查看: {readme}{END}")
+    else:
+        print(f"{RED}❌ 找不到文档文件{END}")
+    
+    print(f"\n{CYAN}其他文档：{END}")
+    print(f"  • README.md - 系统完整介绍")
+    print(f"  • docs/QUICK_USAGE_GUIDE.md - 快速使用指南")
+    print(f"  • docs/DATABASE_GUIDE.md - 数据库管理指南")
+    print(f"  • docs/EXTRACTION_SUCCESS_REPORT.md - 测试报告")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def view_system_status():
+    """查看系统状态"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}系统状态{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    # 检查目录
+    print(f"{CYAN}【目录结构】{END}\n")
+    
+    dirs_to_check = [
+        ("data/processed/parsed", "输入：解析后的论文"),
+        ("data/processed/extracted", "输出：提取的JSON"),
+        ("data/exports", "导出：CSV文件"),
+        ("data/artificial_joint.db", "数据库文件"),
+        ("prompts/prompt.md", "提取Prompt"),
+    ]
+    
+    for path_str, desc in dirs_to_check:
+        path = Path(path_str)
+        if path.exists():
+            if path.is_file():
+                size = path.stat().st_size / 1024
+                print(f"  ✅ {desc}: {path_str} ({size:.1f} KB)")
+            else:
+                count = len(list(path.iterdir()))
+                print(f"  ✅ {desc}: {path_str} ({count} 项)")
+        else:
+            print(f"  ❌ {desc}: {path_str} (不存在)")
+    
+    # 统计信息
+    print(f"\n{CYAN}【数据统计】{END}\n")
+    
+    parsed_dir = Path("data/processed/parsed")
+    if parsed_dir.exists():
+        papers = [d for d in parsed_dir.iterdir() if d.is_dir() and (d / "full.md").exists()]
+        print(f"  📄 已解析论文: {len(papers)} 篇")
+    
+    extracted_dir = Path("data/processed/extracted")
+    if extracted_dir.exists():
+        json_files = list(extracted_dir.glob("*.json"))
+        print(f"  📊 已提取JSON: {len(json_files)} 个")
+    
+    db_path = Path("data/artificial_joint.db")
+    if db_path.exists():
+        try:
+            import sys
+            sys.path.insert(0, str(Path(__file__).parent))
+            from src.database import DatabaseManager
+            from loguru import logger
+            logger.remove()
+            
+            db = DatabaseManager()
+            stats = db.get_statistics()
+            print(f"  💾 数据库记录: {stats.get('total_records', 0)} 条")
+            print(f"  📝 不同论文: {stats.get('unique_papers', 0)} 篇")
+        except:
+            print(f"  💾 数据库记录: (无法读取)")
+    
+    # 配置检查
+    print(f"\n{CYAN}【配置检查】{END}\n")
+    
+    env_file = Path(".env")
+    if env_file.exists():
+        print(f"  ✅ .env 配置文件存在")
+        # 检查关键配置
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        api_key = os.getenv("OPENAI_API_KEY")
+        model = os.getenv("OPENAI_MODEL", "gpt-4o")
+        
+        if api_key:
+            print(f"  ✅ OPENAI_API_KEY: 已配置 ({api_key[:10]}...)")
+        else:
+            print(f"  ❌ OPENAI_API_KEY: 未配置")
+        
+        print(f"  ℹ️  OPENAI_MODEL: {model}")
+    else:
+        print(f"  ❌ .env 配置文件不存在")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def view_logs():
+    """查看提取日志"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}提取日志{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    log_dir = Path("logs")
+    
+    if not log_dir.exists():
+        print(f"{YELLOW}⚠️  日志目录不存在{END}")
+        input(f"\n{GREEN}按回车键返回...{END}")
+        return
+    
+    log_files = sorted(log_dir.glob("*.log"), key=lambda x: x.stat().st_mtime, reverse=True)
+    
+    if not log_files:
+        print(f"{YELLOW}⚠️  没有找到日志文件{END}")
+        input(f"\n{GREEN}按回车键返回...{END}")
+        return
+    
+    print(f"{GREEN}最近的日志文件：{END}\n")
+    
+    for i, log_file in enumerate(log_files[:10], 1):
+        size = log_file.stat().st_size / 1024
+        from datetime import datetime
+        mtime = datetime.fromtimestamp(log_file.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        print(f"  {i}. {log_file.name}")
+        print(f"     大小: {size:.1f} KB | 时间: {mtime}")
+    
+    print(f"\n{CYAN}查看日志命令示例：{END}")
+    if log_files:
+        print(f"  tail -f {log_files[0]}     # 实时查看最新日志")
+        print(f"  cat {log_files[0]} | grep ERROR  # 查看错误信息")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def main():
+    """主函数"""
+    while True:
+        try:
+            clear_screen()
+            print_header()
+            print_main_menu()
+            
+            choice = input(f"{GREEN}请输入选项 (0-12): {END}").strip()
+            
+            if choice == "0":
+                print(f"\n{BLUE}再见！👋{END}\n")
+                sys.exit(0)
+            
+            elif choice == "1":
+                run_extract_test()
+            
+            elif choice == "2":
+                run_extract_single()
+            
+            elif choice == "3":
+                run_extract_batch()
+            
+            elif choice == "4":
+                run_test_single_extraction()
+            
+            elif choice == "5":
+                run_database_menu()
+            
+            elif choice == "6":
+                run_quick_import()
+            
+            elif choice == "7":
+                run_quick_export()
+            
+            elif choice == "8":
+                run_quick_stats()
+            
+            elif choice == "9":
+                run_quick_excel_export()
+            
+            elif choice == "10":
+                view_guide()
+            
+            elif choice == "11":
+                view_system_status()
+            
+            elif choice == "12":
+                view_logs()
+            
+            else:
+                print(f"\n{RED}❌ 无效的选项{END}")
+                input(f"\n{GREEN}按回车键继续...{END}")
+        
+        except KeyboardInterrupt:
+            print(f"\n\n{BLUE}再见！👋{END}\n")
+            sys.exit(0)
+        except Exception as e:
+            print(f"\n{RED}❌ 错误: {str(e)}{END}")
+            import traceback
+            traceback.print_exc()
+            input(f"\n{GREEN}按回车键继续...{END}")
+
+
+if __name__ == "__main__":
+    main()

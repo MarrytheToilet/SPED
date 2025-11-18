@@ -1,0 +1,1952 @@
+{
+  "tables": {
+    "sheet_目录": {
+      "sheet": "目录",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "original": "工作表名",
+          "name": "工作表名",
+          "type": "INTEGER",
+          "nullable": true
+        },
+        {
+          "original": "内容",
+          "name": "内容",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_元数据": {
+      "sheet": "元数据",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "北京科技大学（001）/高精尖学院（0010）",
+          "name": "北京科技大学_001_高精尖学院_0010",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_1": {
+      "sheet": "1",
+      "is_main": true,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "数据标识",
+          "name": "数据标识",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "应用部位",
+          "name": "应用部位",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "产品所属专利号或文献",
+          "name": "产品所属专利号或文献",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头基本信息",
+          "name": "球头信息_球头基本信息",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-成分组成",
+          "name": "球头信息_球头_成分组成",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能",
+          "name": "球头信息_球头_物理性能",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-微观组织",
+          "name": "球头信息_球头_微观组织",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄基本信息",
+          "name": "股骨柄信息_股骨柄基本信息",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-成分组成",
+          "name": "股骨柄信息_股骨柄_成分组成",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能",
+          "name": "股骨柄信息_股骨柄_物理性能",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-微观组织",
+          "name": "股骨柄信息_股骨柄_微观组织",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息",
+          "name": "内衬信息_内衬_基本信息",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-改性填料",
+          "name": "内衬信息_内衬_改性填料",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-成分组成",
+          "name": "内衬信息_内衬_成分组成",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能",
+          "name": "内衬信息_内衬_物理性能",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能",
+          "name": "内衬信息_复合材料性能",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-材料表征",
+          "name": "内衬信息_内衬_材料表征",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验环境-润滑液组成",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验环境_润滑液组成",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头表面成分分析",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头表面成分分析",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.锥颈与球头-实验环境-润滑液组成",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_锥颈与球头_实验环境_润滑液组成",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": [
+        "dataid"
+      ],
+      "foreign_keys": []
+    },
+    "sheet_2": {
+      "sheet": "2",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头基本信息.材料编号",
+          "name": "球头信息_球头基本信息_材料编号",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头基本信息.材料类别",
+          "name": "球头信息_球头基本信息_材料类别",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头基本信息.加工工艺",
+          "name": "球头信息_球头基本信息_加工工艺",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头基本信息.表面处理",
+          "name": "球头信息_球头基本信息_表面处理",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_3": {
+      "sheet": "3",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-成分组成.成分",
+          "name": "球头信息_球头_成分组成_成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-成分组成.成分(%)",
+          "name": "球头信息_球头_成分组成_成分_2",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-成分组成.碳含量(%)",
+          "name": "球头信息_球头_成分组成_碳含量",
+          "type": "FLOAT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_4": {
+      "sheet": "4",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.硬度(HV)",
+          "name": "球头信息_球头_物理性能_硬度_hv",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.接触应力(MPa)",
+          "name": "球头信息_球头_物理性能_接触应力_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.表面粗糙度(μm)",
+          "name": "球头信息_球头_物理性能_表面粗糙度_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.弹性模量(GPa)",
+          "name": "球头信息_球头_物理性能_弹性模量_gpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.抗压强度(MPa)",
+          "name": "球头信息_球头_物理性能_抗压强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.抗拉强度(MPa)",
+          "name": "球头信息_球头_物理性能_抗拉强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.屈服强度(MPa)",
+          "name": "球头信息_球头_物理性能_屈服强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.屈服应力(MPa)",
+          "name": "球头信息_球头_物理性能_屈服应力_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.密度(Kg/m³)",
+          "name": "球头信息_球头_物理性能_密度_kg_m³",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.剪切模量(Pa)",
+          "name": "球头信息_球头_物理性能_剪切模量_pa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.极限拉伸强度(MPa)",
+          "name": "球头信息_球头_物理性能_极限拉伸强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.泊松比",
+          "name": "球头信息_球头_物理性能_泊松比",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.疲劳强度(MPa)",
+          "name": "球头信息_球头_物理性能_疲劳强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.断裂韧性(MPa·m1/2)",
+          "name": "球头信息_球头_物理性能_断裂韧性_mpa_m1_2",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.亲疏水性",
+          "name": "球头信息_球头_物理性能_亲疏水性",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.表面电荷/势(mV)",
+          "name": "球头信息_球头_物理性能_表面电荷_势_mv",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.蠕变常数",
+          "name": "球头信息_球头_物理性能_蠕变常数",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.孔隙率(%)",
+          "name": "球头信息_球头_物理性能_孔隙率",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.孔径大小(μm)",
+          "name": "球头信息_球头_物理性能_孔径大小_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-物理性能.杨氏模量(GPa)",
+          "name": "球头信息_球头_物理性能_杨氏模量_gpa",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_5": {
+      "sheet": "5",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-微观组织.晶粒大小(μm)",
+          "name": "球头信息_球头_微观组织_晶粒大小_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-微观组织.晶粒取向",
+          "name": "球头信息_球头_微观组织_晶粒取向",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-微观组织.晶粒形貌",
+          "name": "球头信息_球头_微观组织_晶粒形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-微观组织.晶粒形貌描述",
+          "name": "球头信息_球头_微观组织_晶粒形貌描述",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-微观组织.碳化物的分布情况",
+          "name": "球头信息_球头_微观组织_碳化物的分布情况",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "球头信息.球头-微观组织.碳化物的分布情况描述",
+          "name": "球头信息_球头_微观组织_碳化物的分布情况描述",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_6": {
+      "sheet": "6",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄基本信息.材料编号",
+          "name": "股骨柄信息_股骨柄基本信息_材料编号",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄基本信息.材料类别",
+          "name": "股骨柄信息_股骨柄基本信息_材料类别",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄基本信息.加工工艺",
+          "name": "股骨柄信息_股骨柄基本信息_加工工艺",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄基本信息.表面处理",
+          "name": "股骨柄信息_股骨柄基本信息_表面处理",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_7": {
+      "sheet": "7",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-成分组成.成分",
+          "name": "股骨柄信息_股骨柄_成分组成_成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-成分组成.成分(%)",
+          "name": "股骨柄信息_股骨柄_成分组成_成分_2",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-成分组成.碳含量(%)",
+          "name": "股骨柄信息_股骨柄_成分组成_碳含量",
+          "type": "FLOAT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_8": {
+      "sheet": "8",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.硬度(HV)",
+          "name": "股骨柄信息_股骨柄_物理性能_硬度_hv",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.接触应力(MPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_接触应力_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.表面粗糙度(μm)",
+          "name": "股骨柄信息_股骨柄_物理性能_表面粗糙度_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.弹性模量(GPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_弹性模量_gpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.抗压强度(MPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_抗压强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.抗拉强度(MPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_抗拉强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.屈服强度(MPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_屈服强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.屈服应力(MPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_屈服应力_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.疲劳强度(MPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_疲劳强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.断裂韧性(MPa·m1/2)",
+          "name": "股骨柄信息_股骨柄_物理性能_断裂韧性_mpa_m1_2",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.亲疏水性",
+          "name": "股骨柄信息_股骨柄_物理性能_亲疏水性",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.表面电荷/势(mV)",
+          "name": "股骨柄信息_股骨柄_物理性能_表面电荷_势_mv",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.蠕变常数",
+          "name": "股骨柄信息_股骨柄_物理性能_蠕变常数",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.孔隙率(%)",
+          "name": "股骨柄信息_股骨柄_物理性能_孔隙率",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.孔径大小(μm)",
+          "name": "股骨柄信息_股骨柄_物理性能_孔径大小_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.杨氏模量(GPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_杨氏模量_gpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.密度(Kg/m³)",
+          "name": "股骨柄信息_股骨柄_物理性能_密度_kg_m³",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.剪切模量(Pa)",
+          "name": "股骨柄信息_股骨柄_物理性能_剪切模量_pa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.极限拉伸强度(MPa)",
+          "name": "股骨柄信息_股骨柄_物理性能_极限拉伸强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-物理性能.泊松比",
+          "name": "股骨柄信息_股骨柄_物理性能_泊松比",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_9": {
+      "sheet": "9",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-微观组织.晶粒大小(μm)",
+          "name": "股骨柄信息_股骨柄_微观组织_晶粒大小_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-微观组织.晶粒取向",
+          "name": "股骨柄信息_股骨柄_微观组织_晶粒取向",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-微观组织.晶粒形貌",
+          "name": "股骨柄信息_股骨柄_微观组织_晶粒形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-微观组织.晶粒形貌描述",
+          "name": "股骨柄信息_股骨柄_微观组织_晶粒形貌描述",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-微观组织.碳化物的分布情况",
+          "name": "股骨柄信息_股骨柄_微观组织_碳化物的分布情况",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "股骨柄信息.股骨柄-微观组织.碳化物的分布情况描述",
+          "name": "股骨柄信息_股骨柄_微观组织_碳化物的分布情况描述",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_10": {
+      "sheet": "10",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息.材料编号",
+          "name": "内衬信息_内衬_基本信息_材料编号",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息.材料类别",
+          "name": "内衬信息_内衬_基本信息_材料类别",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息.分子量",
+          "name": "内衬信息_内衬_基本信息_分子量",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息.结晶度",
+          "name": "内衬信息_内衬_基本信息_结晶度",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息.改性填料",
+          "name": "内衬信息_内衬_基本信息_改性填料",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息.加工工艺",
+          "name": "内衬信息_内衬_基本信息_加工工艺",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-基本信息.表面处理",
+          "name": "内衬信息_内衬_基本信息_表面处理",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_11": {
+      "sheet": "11",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-改性填料.改性填料的种类",
+          "name": "内衬信息_内衬_改性填料_改性填料的种类",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-改性填料.改性填料的添加量(wt%)",
+          "name": "内衬信息_内衬_改性填料_改性填料的添加量_wt",
+          "type": "FLOAT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_12": {
+      "sheet": "12",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-成分组成.材料名称",
+          "name": "内衬信息_内衬_成分组成_材料名称",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-成分组成.成分",
+          "name": "内衬信息_内衬_成分组成_成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-成分组成.组成(%)",
+          "name": "内衬信息_内衬_成分组成_组成",
+          "type": "FLOAT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_13": {
+      "sheet": "13",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.硬度(HV)",
+          "name": "内衬信息_内衬_物理性能_硬度_hv",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.接触应力(MPa)",
+          "name": "内衬信息_内衬_物理性能_接触应力_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.表面粗糙度(μm)",
+          "name": "内衬信息_内衬_物理性能_表面粗糙度_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.弹性模量(GPa)",
+          "name": "内衬信息_内衬_物理性能_弹性模量_gpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.抗压强度(MPa)",
+          "name": "内衬信息_内衬_物理性能_抗压强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.抗拉强度(MPa)",
+          "name": "内衬信息_内衬_物理性能_抗拉强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.屈服强度(MPa)",
+          "name": "内衬信息_内衬_物理性能_屈服强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.屈服应力(MPa)",
+          "name": "内衬信息_内衬_物理性能_屈服应力_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.疲劳强度(MPa)",
+          "name": "内衬信息_内衬_物理性能_疲劳强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.断裂韧性(MPa·m1/2)",
+          "name": "内衬信息_内衬_物理性能_断裂韧性_mpa_m1_2",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.亲疏水性",
+          "name": "内衬信息_内衬_物理性能_亲疏水性",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.表面电荷/势(mV)",
+          "name": "内衬信息_内衬_物理性能_表面电荷_势_mv",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.蠕变常数",
+          "name": "内衬信息_内衬_物理性能_蠕变常数",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.密度(Kg/m³)",
+          "name": "内衬信息_内衬_物理性能_密度_kg_m³",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.剪切模量(Pa)",
+          "name": "内衬信息_内衬_物理性能_剪切模量_pa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.极限拉伸强度(MPa)",
+          "name": "内衬信息_内衬_物理性能_极限拉伸强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-物理性能.泊松比",
+          "name": "内衬信息_内衬_物理性能_泊松比",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_14": {
+      "sheet": "14",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.直径(nm)",
+          "name": "内衬信息_复合材料性能_直径_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.长度(μm)",
+          "name": "内衬信息_复合材料性能_长度_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.比表面积(m²/g)",
+          "name": "内衬信息_复合材料性能_比表面积_m²_g",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.粒径范围(μm)",
+          "name": "内衬信息_复合材料性能_粒径范围_μm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.复合薄膜厚度(mm)",
+          "name": "内衬信息_复合材料性能_复合薄膜厚度_mm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.相对结晶度(%)",
+          "name": "内衬信息_复合材料性能_相对结晶度",
+          "type": "FLOAT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.拉伸强度(MPa)",
+          "name": "内衬信息_复合材料性能_拉伸强度_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.弹性模量​​(MPa)",
+          "name": "内衬信息_复合材料性能_弹性模量_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.平均孔径(nm)",
+          "name": "内衬信息_复合材料性能_平均孔径_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.界面吸附能(Kcal/mol)",
+          "name": "内衬信息_复合材料性能_界面吸附能_kcal_mol",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.复合材料性能.内聚力能密度​​(J/cm³)",
+          "name": "内衬信息_复合材料性能_内聚力能密度_j_cm³",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_15": {
+      "sheet": "15",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-材料表征.表征方法",
+          "name": "内衬信息_内衬_材料表征_表征方法",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-材料表征.表征图片",
+          "name": "内衬信息_内衬_材料表征_表征图片",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "内衬信息.内衬-材料表征.分析结果",
+          "name": "内衬信息_内衬_材料表征_分析结果",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_16": {
+      "sheet": "16",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.测试设备",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_测试设备",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.测试设备图片",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_测试设备图片",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.摩擦测试条件",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_摩擦测试条件",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.负载(N)",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_负载_n",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.滑动距离(mm)",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_滑动距离_mm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.润滑液类型",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_润滑液类型",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.蛋白质浓度(g/L)",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_蛋白质浓度_g_l",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.测试周期",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_测试周期",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.测试温度(℃)",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_测试温度",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验设置.测试时间(h)",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验设置_测试时间_h",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_17": {
+      "sheet": "17",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.腐蚀速率（mm³/year）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_腐蚀速率_mm³_year",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.腐蚀电流（A）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_腐蚀电流_a",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.测试时间（h）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_测试时间_h",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.开路电位（V）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_开路电位_v",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.零电流电位（V）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_零电流电位_v",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.离子释放量（μg/L）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_离子释放量_μg_l",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.钝化膜电阻（Ω·cm²）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_钝化膜电阻_ω_cm²",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.腐蚀形貌",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_腐蚀形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头腐蚀实验结果.腐蚀形貌描述",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头腐蚀实验结果_腐蚀形貌描述",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_18": {
+      "sheet": "18",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.腐蚀速率（mm³/year）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_腐蚀速率_mm³_year",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.腐蚀电流（A）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_腐蚀电流_a",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.测试时间（h）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_测试时间_h",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.开路电位（V）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_开路电位_v",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.零电流电位（V）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_零电流电位_v",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.离子释放量（μg/L）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_离子释放量_μg_l",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.钝化膜电阻（Ω·cm²）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_钝化膜电阻_ω_cm²",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.腐蚀形貌",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_腐蚀形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬腐蚀实验结果.腐蚀形貌描述",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬腐蚀实验结果_腐蚀形貌描述",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_19": {
+      "sheet": "19",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验环境-润滑液组成.环境名称",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验环境_润滑液组成_环境名称",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验环境-润滑液组成.成分",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验环境_润滑液组成_成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验环境-润滑液组成.浓度或组成",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验环境_润滑液组成_浓度或组成",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬与球头-实验环境-润滑液组成.单位",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬与球头_实验环境_润滑液组成_单位",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_20": {
+      "sheet": "20",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.磨损率（mg/Mc）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_磨损率_mg_mc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.磨损因子（mm³/Nm）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_磨损因子_mm³_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.总重量损失（mg）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_总重量损失_mg",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.磨损形貌",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_磨损形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.磨损颗粒大小（nm）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_磨损颗粒大小_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.磨损颗粒形貌",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_磨损颗粒形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.摩擦膜厚度（nm）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_摩擦膜厚度_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.摩擦膜成分",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_摩擦膜成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头磨损实验结果.摩擦膜硬度（HV）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头磨损实验结果_摩擦膜硬度_hv",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_21": {
+      "sheet": "21",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.磨损率（mg/Mc）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_磨损率_mg_mc",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.磨损因子（mm³/Nm）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_磨损因子_mm³_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.总重量损失（mg）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_总重量损失_mg",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.磨损形貌",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_磨损形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.磨损颗粒大小（nm）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_磨损颗粒大小_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.磨损颗粒形貌",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_磨损颗粒形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.摩擦膜厚度（nm）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_摩擦膜厚度_nm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.摩擦膜成分",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_摩擦膜成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.内衬磨损实验结果.摩擦膜硬度（HV）",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_内衬磨损实验结果_摩擦膜硬度_hv",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_22": {
+      "sheet": "22",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头表面成分分析.分析方法",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头表面成分分析_分析方法",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头表面成分分析.测试环境",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头表面成分分析_测试环境",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头表面成分分析.成分",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头表面成分分析_成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-内衬与球头摩擦腐蚀实验.球头表面成分分析.成分组成",
+          "name": "体外实验_内衬与球头摩擦腐蚀实验_球头表面成分分析_成分组成",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_23": {
+      "sheet": "23",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.测试设备",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_测试设备",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.测试设备图片",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_测试设备图片",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.摩擦测试条件",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_摩擦测试条件",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.负载(N)",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_负载_n",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.滑动距离(mm)",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_滑动距离_mm",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.润滑液类型",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_润滑液类型",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.蛋白质浓度(g/L)",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_蛋白质浓度_g_l",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.测试周期",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_测试周期",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.测试温度(℃)",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_测试温度",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.测试时间(h)",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_测试时间_h",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.装配扭矩（N·m）",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_装配扭矩_n_m",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.接触应力（MPa）",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_接触应力_mpa",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.球头与锥颈-实验设置.微动频率（Hz）",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_球头与锥颈_实验设置_微动频率_hz",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_24": {
+      "sheet": "24",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.锥颈与球头-实验环境-润滑液组成.环境名称",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_锥颈与球头_实验环境_润滑液组成_环境名称",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.锥颈与球头-实验环境-润滑液组成.成分",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_锥颈与球头_实验环境_润滑液组成_成分",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.锥颈与球头-实验环境-润滑液组成.浓度或组成",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_锥颈与球头_实验环境_润滑液组成_浓度或组成",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.锥颈与球头-实验环境-润滑液组成.单位",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_锥颈与球头_实验环境_润滑液组成_单位",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    },
+    "sheet_25": {
+      "sheet": "25",
+      "is_main": false,
+      "columns": [
+        {
+          "original": "数据ID",
+          "name": "数据id",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.微动摩擦系数",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_微动摩擦系数",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.微动磨损体积(mm³)",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_微动磨损体积_mm³",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.微动腐蚀速率(μm/年)",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_微动腐蚀速率_μm_年",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.磨损颗粒形貌",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_磨损颗粒形貌",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.磨损颗粒形貌描述",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_磨损颗粒形貌描述",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.腐蚀产物",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_腐蚀产物",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.离子释放量",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_离子释放量",
+          "type": "TEXT",
+          "nullable": true
+        },
+        {
+          "original": "体外实验-球头与锥颈界面微动腐蚀实验.腐蚀与磨损实验结果.界面失效模式",
+          "name": "体外实验_球头与锥颈界面微动腐蚀实验_腐蚀与磨损实验结果_界面失效模式",
+          "type": "TEXT",
+          "nullable": true
+        }
+      ],
+      "primary_key": null,
+      "foreign_keys": [
+        {
+          "columns": [
+            "dataid"
+          ],
+          "ref_table": "sheet_1",
+          "ref_columns": [
+            "dataid"
+          ]
+        }
+      ]
+    }
+  }
+}
