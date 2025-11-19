@@ -24,7 +24,7 @@ class Extractor:
             output_dir: 输出目录
             mode: 提取模式 (full/chunk)
             model: 模型名称
-            max_workers: 并行worker数量，None则使用CPU核心数（最大4）
+            max_workers: 并行worker数量，None则使用配置文件设置
         """
         self.output_dir = output_dir
         self.mode = mode
@@ -33,8 +33,18 @@ class Extractor:
         
         # 设置并行worker数量
         if max_workers is None:
-            cpu_count = multiprocessing.cpu_count()
-            self.max_workers = min(cpu_count, 4)
+            # 从配置文件读取
+            import sys
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+            import settings
+            
+            if settings.DEFAULT_WORKERS is not None:
+                self.max_workers = settings.DEFAULT_WORKERS
+            else:
+                # 自动选择：CPU核心数，但不超过MAX_WORKERS
+                cpu_count = multiprocessing.cpu_count()
+                self.max_workers = min(cpu_count, settings.MAX_WORKERS)
         else:
             self.max_workers = max_workers
         

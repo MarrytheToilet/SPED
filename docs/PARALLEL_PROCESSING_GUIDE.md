@@ -51,20 +51,32 @@ python src/pipeline/processor.py --batch batch_1 --no-parallel
 
 ## ⚙️ 配置参数
 
-### `--workers` / `-w`
-- **作用**：设置并行worker数量
-- **默认值**：`min(CPU核心数, 4)`
-- **建议值**：
-  - CPU较多：3-4个worker
-  - CPU较少：2个worker
-  - API有限流：1-2个worker
+### 命令行参数
 
-### `--no-parallel`
-- **作用**：禁用并行，使用串行模式
-- **适用场景**：
-  - API有严格的速率限制
-  - 调试时需要查看详细日志
-  - 系统资源紧张
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--workers N` | 并行worker数 | 见环境变量配置 |
+| `--no-parallel` | 禁用并行 | 启用并行 |
+| `--model MODEL` | 指定模型 | 默认模型 |
+
+### 环境变量配置（.env文件）
+
+在 `.env` 文件中可以设置默认的并行配置：
+
+```bash
+# 最大worker数量限制（系统不会超过这个值）
+MAX_WORKERS=4
+
+# 默认worker数量（留空则自动选择）
+# 不设置或留空：自动选择 = min(CPU核心数, MAX_WORKERS)
+# 设置为具体数字：固定使用该数量的worker
+DEFAULT_WORKERS=3
+```
+
+**优先级**：
+1. 命令行参数 `--workers` （最高优先级）
+2. 环境变量 `DEFAULT_WORKERS`
+3. 自动选择 `min(CPU核心数, MAX_WORKERS)`
 
 ---
 
@@ -84,8 +96,24 @@ python src/pipeline/processor.py --batch batch_1 --no-parallel
 
 ### 1. 推荐配置
 
+**方法1：使用环境变量（推荐）**
+
+在 `.env` 文件中设置：
 ```bash
-# 对于大多数情况，使用默认配置即可
+# 固定使用3个worker
+DEFAULT_WORKERS=3
+MAX_WORKERS=4
+```
+
+然后直接运行：
+```bash
+python scripts/extract.py batch
+```
+
+**方法2：使用命令行参数**
+
+```bash
+# 对于大多数情况
 python scripts/extract.py batch
 
 # 如果有更多CPU核心，可以增加worker
@@ -191,11 +219,31 @@ A: 可能原因：
 
 建议降低worker数量或使用串行模式。
 
+### Q: 如何设置默认的worker数量？
+
+A: 有两种方法：
+
+**方法1：在 .env 文件中设置（推荐）**
+```bash
+# 固定使用3个worker
+DEFAULT_WORKERS=3
+
+# 或留空自动选择
+# DEFAULT_WORKERS=
+```
+
+**方法2：命令行参数**
+```bash
+python scripts/extract.py batch --workers 3
+```
+
+优先级：命令行参数 > 环境变量 > 自动选择
+
 ### Q: 如何查看当前使用了多少worker？
 
 A: 启动时会显示：
 ```
-Pipeline初始化: 并行worker数=4
+Extractor初始化: 并行worker数=4
 启动并行提取模式: 4 workers
 ```
 

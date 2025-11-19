@@ -204,8 +204,16 @@ def extract_batch_interactive(mode: str = None, model: str = None, parallel: boo
     # 显示并行配置
     if parallel:
         import multiprocessing
-        default_workers = min(multiprocessing.cpu_count(), 4)
-        actual_workers = workers if workers else default_workers
+        import settings
+        
+        if workers:
+            actual_workers = workers
+        elif settings.DEFAULT_WORKERS is not None:
+            actual_workers = settings.DEFAULT_WORKERS
+        else:
+            default_workers = min(multiprocessing.cpu_count(), settings.MAX_WORKERS)
+            actual_workers = default_workers
+        
         print(f"\n⚡ 并行处理: {actual_workers} workers")
     else:
         print(f"\n🔄 串行处理模式")

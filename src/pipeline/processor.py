@@ -27,7 +27,7 @@ class ProcessingPipeline:
         
         Args:
             use_database: 是否使用数据库插入Agent
-            max_workers: 并行处理的最大worker数量，None则使用CPU核心数
+            max_workers: 并行处理的最大worker数量，None则使用配置文件设置
         """
         self.text_extractor = TextExtractor()
         self.orchestrator = AgentOrchestrator()
@@ -35,9 +35,14 @@ class ProcessingPipeline:
         
         # 设置并行worker数量
         if max_workers is None:
-            # 默认使用CPU核心数，但不超过4个（避免API限流）
-            cpu_count = multiprocessing.cpu_count()
-            self.max_workers = min(cpu_count, 4)
+            # 从配置文件读取
+            from settings import DEFAULT_WORKERS, MAX_WORKERS
+            if DEFAULT_WORKERS is not None:
+                self.max_workers = DEFAULT_WORKERS
+            else:
+                # 自动选择：CPU核心数，但不超过MAX_WORKERS
+                cpu_count = multiprocessing.cpu_count()
+                self.max_workers = min(cpu_count, MAX_WORKERS)
         else:
             self.max_workers = max_workers
         

@@ -8,11 +8,28 @@
 
 ## 💡 最常用命令
 
-### 推荐用法（默认并行）
+### 推荐用法1：配置.env文件
+
+在 `.env` 中设置：
+```bash
+DEFAULT_WORKERS=3
+MAX_WORKERS=4
+```
+
+然后运行：
+```bash
+# 自动使用.env中配置的worker数
+python scripts/extract.py batch
+```
+
+### 推荐用法2：命令行指定
 
 ```bash
-# 批量提取，自动并行（推荐）
+# 使用默认配置（自动选择worker数）
 python scripts/extract.py batch
+
+# 指定worker数量（覆盖.env配置）
+python scripts/extract.py batch --workers 4
 ```
 
 ### 自定义并行数
@@ -36,11 +53,32 @@ python scripts/extract.py batch --no-parallel
 
 ## 🎯 参数速查
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--workers N` | 并行worker数 | CPU核心数（最大4） |
-| `--no-parallel` | 禁用并行 | 启用并行 |
-| `--model MODEL` | 指定模型 | 默认模型 |
+| 参数 | 说明 | 默认值 | 配置位置 |
+|------|------|--------|---------|
+| `--workers N` | 并行worker数 | 见下方优先级 | 命令行 |
+| `--no-parallel` | 禁用并行 | 启用并行 | 命令行 |
+| `DEFAULT_WORKERS` | 默认worker数 | 留空=自动 | .env文件 |
+| `MAX_WORKERS` | 最大worker数 | 4 | .env文件 |
+
+**Worker数量优先级**：
+1. 命令行 `--workers N` （最高）
+2. 环境变量 `DEFAULT_WORKERS`
+3. 自动选择 `min(CPU核心数, MAX_WORKERS)`
+
+---
+
+## 🔧 环境变量配置
+
+在 `.env` 文件中添加：
+
+```bash
+# 并行处理配置
+MAX_WORKERS=4              # 最大worker数量限制
+DEFAULT_WORKERS=3          # 默认使用3个worker
+
+# 或留空自动选择
+# DEFAULT_WORKERS=         # 自动 = min(CPU核心数, MAX_WORKERS)
+```
 
 ---
 

@@ -42,28 +42,35 @@ batch_index: 5, 6, 7  # ✅ 继续递增，不会重复
 
 **解决方案**：
 - ✅ 使用`ThreadPoolExecutor`实现并行处理
-- ✅ 默认使用CPU核心数（最大4个worker）
+- ✅ 支持环境变量配置默认worker数
+- ✅ 支持命令行参数覆盖
 - ✅ 支持自定义worker数量
 - ✅ 支持串行/并行模式切换
 - ✅ 线程安全：每个worker独立创建Agent实例
 
 **修改文件**：
-- `src/pipeline/processor.py`
-- `src/extractors/extractor.py`
-- `scripts/extract.py`
+- `settings.py` - 添加并行配置
+- `src/pipeline/processor.py` - 支持环境变量配置
+- `src/extractors/extractor.py` - 支持环境变量配置
+- `scripts/extract.py` - 支持环境变量配置
+- `.env.example` - 添加配置说明
 
-**性能提升**：
-- 2-4倍速度提升（取决于worker数量和API响应）
+**配置方式**：
+```bash
+# .env 文件
+MAX_WORKERS=4          # 最大worker数
+DEFAULT_WORKERS=3      # 默认worker数（留空则自动）
+```
 
 **使用方法**：
 ```bash
-# 默认并行处理
+# 使用.env配置
 python scripts/extract.py batch
 
-# 指定worker数量
+# 命令行覆盖
 python scripts/extract.py batch --workers 4
 
-# 禁用并行（串行模式）
+# 禁用并行
 python scripts/extract.py batch --no-parallel
 ```
 
@@ -107,15 +114,26 @@ python scripts/pdf_process.py download
 
 ### 数据提取（新增参数）
 
+**环境变量配置（.env文件）**：
+```bash
+# 并行处理配置
+MAX_WORKERS=4              # 最大worker数量
+DEFAULT_WORKERS=3          # 默认worker数（留空则自动）
+```
+
+**命令行参数**：
 ```bash
 # 批量提取 - 新增参数
 python scripts/extract.py batch [mode] [--model MODEL] [--workers N] [--no-parallel]
 
 参数说明:
-  --workers N, -w N    并行worker数量（默认=CPU核心数，最大4）
+  --workers N, -w N    并行worker数量（覆盖.env配置）
   --no-parallel        禁用并行处理
   --model MODEL        指定LLM模型
 ```
+
+**优先级**：
+- 命令行 `--workers` > 环境变量 `DEFAULT_WORKERS` > 自动选择
 
 ### Pipeline处理（新增参数）
 
@@ -147,8 +165,25 @@ python scripts/pdf_process.py download
 
 ### 2. 数据提取阶段
 
+**方法1：使用.env配置（推荐）**
+
+在 `.env` 文件中设置：
 ```bash
-# 推荐：使用默认并行配置
+# 固定使用3个worker
+DEFAULT_WORKERS=3
+MAX_WORKERS=4
+```
+
+然后运行：
+```bash
+# 自动使用配置的worker数
+python scripts/extract.py batch
+```
+
+**方法2：命令行参数**
+
+```bash
+# 推荐：使用默认配置
 python scripts/extract.py batch
 
 # 如果API有限流，减少worker数

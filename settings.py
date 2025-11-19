@@ -234,6 +234,16 @@ MODEL_MAX_TOKENS = {
 CHUNK_MODE_MAX_TOKENS = int(os.getenv("CHUNK_MODE_MAX_TOKENS", "4096"))
 
 # ==========================
+# 并行处理配置
+# ==========================
+# 最大worker数量（默认为CPU核心数，但不超过此值）
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", "4"))
+# 默认worker数量（None表示自动，将使用min(CPU核心数, MAX_WORKERS)）
+DEFAULT_WORKERS = os.getenv("DEFAULT_WORKERS", None)
+if DEFAULT_WORKERS is not None:
+    DEFAULT_WORKERS = int(DEFAULT_WORKERS)
+
+# ==========================
 # 文本分块配置
 # ==========================
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "10000"))  # 每个chunk的字符数
