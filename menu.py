@@ -127,16 +127,154 @@ def show_workflow_guide():
 
 
 def run_pdf_menu():
-    """PDF处理菜单"""
+    """PDF处理菜单 - 集成版本"""
+    while True:
+        clear_screen()
+        print(f"\n{BLUE}{'='*80}{END}")
+        print(f"{BLUE}{BOLD}PDF处理菜单{END}")
+        print(f"{BLUE}{'='*80}{END}\n")
+        
+        print(f"{GREEN}{BOLD}PDF处理流程：{END}\n")
+        print(f"  {BOLD}1.{END} 📤 上传PDF到MinerU（自动去重）")
+        print(f"  {BOLD}2.{END} 📊 查询处理状态")
+        print(f"  {BOLD}3.{END} 📥 下载解析结果（自动去重）")
+        print(f"  {BOLD}4.{END} 📈 查看统计信息")
+        print(f"  {BOLD}5.{END} 🔧 完整流程：上传→查询→下载")
+        print()
+        print(f"  {BOLD}0.{END} 🔙 返回主菜单")
+        print()
+        
+        choice = input(f"{GREEN}请选择操作 (0-5): {END}").strip()
+        
+        if choice == "0":
+            break
+        elif choice == "1":
+            run_pdf_upload()
+        elif choice == "2":
+            run_pdf_status()
+        elif choice == "3":
+            run_pdf_download()
+        elif choice == "4":
+            run_pdf_stats()
+        elif choice == "5":
+            run_pdf_full_workflow()
+        else:
+            print(f"\n{RED}❌ 无效选项{END}")
+            input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_upload():
+    """上传PDF到MinerU"""
     print(f"\n{BLUE}{'='*80}{END}")
-    print(f"{BLUE}PDF处理菜单{END}")
+    print(f"{BLUE}上传PDF到MinerU{END}")
     print(f"{BLUE}{'='*80}{END}\n")
     
-    os.system("python scripts/pdf_process.py")
+    os.system("python scripts/pdf_process.py upload")
     
-    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+    input(f"\n{GREEN}按回车键继续...{END}")
 
 
+def run_pdf_status():
+    """查询处理状态"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}查询MinerU处理状态{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_process.py status")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_download():
+    """下载解析结果"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}下载MinerU解析结果{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_process.py download")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_stats():
+    """查看统计信息"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}PDF处理统计{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_process.py stats")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_full_workflow():
+    """完整PDF处理流程"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}{BOLD}完整PDF处理流程{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    print(f"{YELLOW}此流程将依次执行：{END}")
+    print(f"  1. 上传PDF到MinerU")
+    print(f"  2. 等待处理完成（自动查询）")
+    print(f"  3. 下载解析结果")
+    print()
+    
+    confirm = input(f"{GREEN}确认开始完整流程？(y/n): {END}")
+    
+    if confirm.lower() != 'y':
+        print(f"\n{YELLOW}已取消{END}")
+        input(f"\n{GREEN}按回车键继续...{END}")
+        return
+    
+    # 步骤1: 上传
+    print(f"\n{CYAN}{'='*80}{END}")
+    print(f"{CYAN}步骤 1/3: 上传PDF{END}")
+    print(f"{CYAN}{'='*80}{END}\n")
+    os.system("python scripts/pdf_process.py upload")
+    
+    input(f"\n{GREEN}按回车键继续到下一步...{END}")
+    
+    # 步骤2: 查询状态（循环直到完成）
+    print(f"\n{CYAN}{'='*80}{END}")
+    print(f"{CYAN}步骤 2/3: 查询处理状态{END}")
+    print(f"{CYAN}{'='*80}{END}\n")
+    
+    print(f"{YELLOW}提示: 请查看状态，如果未完成需要等待后再次查询{END}")
+    print(f"{YELLOW}      可以多次按回车重复查询，直到所有文件处理完成{END}\n")
+    
+    while True:
+        os.system("python scripts/pdf_process.py status")
+        
+        choice = input(f"\n{GREEN}处理完成了吗？(y=继续下载 / n=再次查询 / q=退出): {END}").strip().lower()
+        
+        if choice == 'y':
+            break
+        elif choice == 'q':
+            print(f"\n{YELLOW}已退出完整流程{END}")
+            input(f"\n{GREEN}按回车键继续...{END}")
+            return
+        else:
+            print(f"\n{CYAN}重新查询状态...{END}\n")
+            import time
+            time.sleep(2)
+    
+    # 步骤3: 下载
+    print(f"\n{CYAN}{'='*80}{END}")
+    print(f"{CYAN}步骤 3/3: 下载解析结果{END}")
+    print(f"{CYAN}{'='*80}{END}\n")
+    os.system("python scripts/pdf_process.py download")
+    
+    print(f"\n{GREEN}{'='*80}{END}")
+    print(f"{GREEN}✅ 完整流程已完成！{END}")
+    print(f"{GREEN}{'='*80}{END}")
+    print(f"\n{CYAN}💡 下一步建议：{END}")
+    print(f"   • 返回主菜单选择 2 或 3 进行数据提取")
+    print(f"   • 提取完成后选择 6 导入数据库")
+    
+    input(f"\n{GREEN}按回车键返回PDF菜单...{END}")
+
+
+def run_extract_test():
     """测试系统配置"""
     print(f"\n{BLUE}{'='*80}{END}")
     print(f"{BLUE}测试系统配置{END}")
