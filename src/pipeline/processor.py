@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from loguru import logger
 from typing import List, Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing
 
 # 添加项目根目录到path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -19,16 +21,27 @@ from src.agents.database_agent import DatabaseInsertionAgent
 class ProcessingPipeline:
     """完整的处理流程"""
     
-    def __init__(self, use_database: bool = True):
+    def __init__(self, use_database: bool = True, max_workers: int = None):
         """
         初始化处理流程
         
         Args:
             use_database: 是否使用数据库插入Agent
+            max_workers: 并行处理的最大worker数量，None则使用CPU核心数
         """
         self.text_extractor = TextExtractor()
         self.orchestrator = AgentOrchestrator()
         self.use_database = use_database
+        
+        # 设置并行worker数量
+        if max_workers is None:
+            # 默认使用CPU核心数，但不超过4个（避免API限流）
+            cpu_count = multiprocessing.cpu_count()
+            self.max_workers = min(cpu_count, 4)
+        else:
+            self.max_workers = max_workers
+        
+        logger.info(f"Pipeline初始化: 并行worker数={self.max_workers}")
         
         # 注册Agents
         self._setup_agents()
@@ -101,12 +114,13 @@ class ProcessingPipeline:
         
         return agent_results
     
-    def process_batch(self, batch_name: str = "batch_1") -> List[Dict]:
+    def process_batch(self, batch_name: str = "batch_1", parallel: bool = True) -> List[Dict]:
         """
         批量处理论文
         
         Args:
             batch_name: 批次名称
+            parallel: 是否并行处理（默认True）
         
         Returns:
             所有论文的处理结果
@@ -121,6 +135,23 @@ class ProcessingPipeline:
         paper_dirs = [d for d in batch_dir.iterdir() if d.is_dir()]
         logger.info(f"发现 {len(paper_dirs)} 篇论文")
         
+        if parallel and len(paper_dirs) > 1:
+            logger.info(f"启动并行处理模式: {self.max_workers} workers")
+            results = self._process_batch_parallel(paper_dirs)
+        else:
+            logger.info(f"使用串行处理模式")
+            results = self._process_batch_sequential(paper_dirs)
+        
+        # 统计
+        success_count = sum(1 for r in results if r["status"] == "success")
+        logger.info(f"\n批量处理完成:")
+        logger.info(f"  成功: {success_count}/{len(results)}")
+        logger.info(f"  失败: {len(results) - success_count}/{len(results)}")
+        
+        return results
+    
+    def _process_batch_sequential(self, paper_dirs: List[Path]) -> List[Dict]:
+        """串行处理（原有逻辑）"""
         results = []
         for i, paper_dir in enumerate(paper_dirs, 1):
             logger.info(f"\n处理进度: {i}/{len(paper_dirs)}")
@@ -140,13 +171,60 @@ class ProcessingPipeline:
                     "error": str(e)
                 })
         
-        # 统计
-        success_count = sum(1 for r in results if r["status"] == "success")
-        logger.info(f"\n批量处理完成:")
-        logger.info(f"  成功: {success_count}/{len(results)}")
-        logger.info(f"  失败: {len(results) - success_count}/{len(results)}")
+        return results
+    
+    def _process_batch_parallel(self, paper_dirs: List[Path]) -> List[Dict]:
+        """并行处理"""
+        results = []
+        completed_count = 0
+        total_count = len(paper_dirs)
+        
+        # 使用ThreadPoolExecutor进行并行处理
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # 提交所有任务
+            future_to_paper = {
+                executor.submit(self._process_single_paper_safe, str(paper_dir)): paper_dir
+                for paper_dir in paper_dirs
+            }
+            
+            # 处理完成的任务
+            for future in as_completed(future_to_paper):
+                paper_dir = future_to_paper[future]
+                completed_count += 1
+                
+                try:
+                    result = future.result()
+                    results.append(result)
+                    
+                    status_icon = "✓" if result["status"] == "success" else "✗"
+                    logger.info(f"[{completed_count}/{total_count}] {status_icon} {result['paper_id']}")
+                    
+                except Exception as e:
+                    logger.error(f"[{completed_count}/{total_count}] ✗ {paper_dir.name}: {str(e)}")
+                    results.append({
+                        "paper_id": paper_dir.name,
+                        "status": "failed",
+                        "error": str(e)
+                    })
         
         return results
+    
+    def _process_single_paper_safe(self, paper_dir: str) -> Dict:
+        """安全的单论文处理（用于并行）"""
+        paper_path = Path(paper_dir)
+        try:
+            result = self.process_paper(paper_dir)
+            return {
+                "paper_id": paper_path.name,
+                "status": "success",
+                "result": result
+            }
+        except Exception as e:
+            return {
+                "paper_id": paper_path.name,
+                "status": "failed",
+                "error": str(e)
+            }
     
     def _save_results(self, results: Dict, paper_id: str):
         """保存处理结果"""
@@ -172,6 +250,8 @@ def main():
     parser.add_argument("--batch", type=str, default="batch_1", help="批次名称")
     parser.add_argument("--no-db", action="store_true", help="不使用数据库")
     parser.add_argument("--test", action="store_true", help="测试模式（只处理1篇）")
+    parser.add_argument("--no-parallel", action="store_true", help="禁用并行处理")
+    parser.add_argument("--workers", type=int, default=None, help="并行worker数量（默认=CPU核心数，最大4）")
     
     args = parser.parse_args()
     
@@ -184,7 +264,10 @@ def main():
     )
     
     # 创建Pipeline
-    pipeline = ProcessingPipeline(use_database=not args.no_db)
+    pipeline = ProcessingPipeline(
+        use_database=not args.no_db,
+        max_workers=args.workers
+    )
     
     if args.paper_dir:
         # 处理单篇论文
@@ -199,7 +282,7 @@ def main():
                 logger.info("测试模式：只处理第一篇论文")
                 pipeline.process_paper(str(paper_dirs[0]))
         else:
-            pipeline.process_batch(args.batch)
+            pipeline.process_batch(args.batch, parallel=not args.no_parallel)
 
 
 if __name__ == "__main__":

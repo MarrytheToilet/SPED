@@ -131,27 +131,40 @@ def cmd_upload(args):
     print(f"   已分析: {stats['analyzed']} 篇论文")
     print(f"\n📁 发现 {len(pdfs)} 个PDF，分 {ceil(len(pdfs)/BATCH_SIZE)} 批上传\n")
     
-    # 检查已有的batch ID，避免重复
+    # 检查已有的batch ID和获取最大batch_index
     existing_batch_ids = set()
+    max_batch_index = 0
     if BATCH_CSV.exists():
         with open(BATCH_CSV) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 if 'batch_id' in row:
                     existing_batch_ids.add(row['batch_id'])
+                if 'batch_index' in row:
+                    try:
+                        idx = int(row['batch_index'])
+                        max_batch_index = max(max_batch_index, idx)
+                    except ValueError:
+                        pass
         print(f"🔍 已有批次记录: {len(existing_batch_ids)} 个")
+        print(f"   最大批次索引: {max_batch_index}")
         if existing_batch_ids:
-            print(f"   最近批次: {list(existing_batch_ids)[-3:]}")
+            print(f"   最近批次ID: {list(existing_batch_ids)[-3:]}")
         print()
     else:
         with open(BATCH_CSV, 'w') as f:
             csv.writer(f).writerow(["batch_index", "batch_id", "file_count", "access_url", "time"])
+    
+    # 新批次从max_batch_index+1开始
+    start_batch_index = max_batch_index
     
     session = create_session()
     uploaded_total = 0
     skipped_total = 0
     
     for batch_idx in range(ceil(len(pdfs)/BATCH_SIZE)):
+        # 使用全局递增的batch_index
+        current_batch_index = start_batch_index + batch_idx + 1
         batch = pdfs[batch_idx*BATCH_SIZE:(batch_idx+1)*BATCH_SIZE]
         
         # 过滤已上传的PDF
@@ -164,10 +177,10 @@ def cmd_upload(args):
                 to_upload.append(pdf)
         
         if not to_upload:
-            print(f"📦 批次 {batch_idx+1}: 全部已上传，跳过\n")
+            print(f"📦 批次 {current_batch_index}: 全部已上传，跳过\n")
             continue
         
-        print(f"\n📦 批次 {batch_idx+1}: {len(to_upload)} 个新文件（跳过{len(batch)-len(to_upload)}个）")
+        print(f"\n📦 批次 {current_batch_index}: {len(to_upload)} 个新文件（跳过{len(batch)-len(to_upload)}个）")
         
         # 准备上传数据
         files_data = []
@@ -175,7 +188,7 @@ def cmd_upload(args):
             name = p.stem[:60] if len(p.stem) > 60 else p.stem
             files_data.append({
                 "name": p.name,
-                "data_id": f"b{batch_idx+1}_{i+1}_{name}",
+                "data_id": f"b{current_batch_index}_{i+1}_{name}",
                 **FILE_CONFIG
             })
         
@@ -224,12 +237,12 @@ def cmd_upload(args):
             if batch_id not in existing_batch_ids:
                 with open(BATCH_CSV, 'a') as f:
                     csv.writer(f).writerow([
-                        batch_idx+1, batch_id, len(to_upload),
+                        current_batch_index, batch_id, len(to_upload),
                         f"https://mineru.net/extract/batch/{batch_id}",
                         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     ])
                 existing_batch_ids.add(batch_id)  # 添加到集合中
-                print(f"  ✓ 批次记录已保存到CSV")
+                print(f"  ✓ 批次记录已保存到CSV (batch_index={current_batch_index})")
             else:
                 print(f"  ⏭️  批次记录已存在，跳过保存")
         

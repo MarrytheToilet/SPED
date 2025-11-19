@@ -100,6 +100,11 @@ AVAILABLE_MODELS = {
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
         "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
     },
+    "Pro/moonshotai/Kimi-K2-Instruct-0905": {
+        "provider": "siliconflow",
+        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
+        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
+    },
     "deepseek-ai/DeepSeek-V2.5": {
         "provider": "siliconflow",
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
@@ -140,8 +145,6 @@ else:
     OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
     OPENAI_MODEL = DEFAULT_MODEL
     LLM_PROVIDER = "custom"
-
-OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-ada-002")
 
 # ==========================
 # 动态配置函数
@@ -220,6 +223,7 @@ MODEL_MAX_TOKENS = {
     "Qwen/Qwen2.5-72B-Instruct": int(os.getenv("QWEN_72B_MAX_TOKENS", "30000")),
     "Qwen/Qwen2.5-7B-Instruct": int(os.getenv("QWEN_7B_MAX_TOKENS", "30000")),
     "moonshotai/Kimi-K2-Instruct-0905": int(os.getenv("KIMI_MAX_TOKENS", "32000")),
+    "Pro/moonshotai/Kimi-K2-Instruct-0905": int(os.getenv("KIMI_MAX_TOKENS", "32000")),
     "deepseek-ai/DeepSeek-V2.5": int(os.getenv("DEEPSEEK_V25_MAX_TOKENS", "30000")),
     "deepseek-chat": int(os.getenv("DEEPSEEK_CHAT_MAX_TOKENS", "16000")),
     "glm-4-plus": int(os.getenv("GLM4_PLUS_MAX_TOKENS", "16000")),

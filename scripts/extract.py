@@ -173,7 +173,7 @@ def extract_single_interactive(mode: str = None, model: str = None):
     print(f"{DIVIDER}\n")
 
 
-def extract_batch_interactive(mode: str = None, model: str = None):
+def extract_batch_interactive(mode: str = None, model: str = None, parallel: bool = True, workers: int = None):
     """交互式批量提取"""
     print(f"\n{DIVIDER}")
     print("批量数据提取")
@@ -201,6 +201,15 @@ def extract_batch_interactive(mode: str = None, model: str = None):
         print("取消操作")
         return
     
+    # 显示并行配置
+    if parallel:
+        import multiprocessing
+        default_workers = min(multiprocessing.cpu_count(), 4)
+        actual_workers = workers if workers else default_workers
+        print(f"\n⚡ 并行处理: {actual_workers} workers")
+    else:
+        print(f"\n🔄 串行处理模式")
+    
     print(f"\n开始批量提取...\n")
     
     # 4. 配置日志
@@ -211,10 +220,11 @@ def extract_batch_interactive(mode: str = None, model: str = None):
     extractor = Extractor(
         output_dir=settings.EXTRACTED_DIR,
         mode=mode,
-        model=model
+        model=model,
+        max_workers=workers
     )
     
-    stats = extractor.extract_batch(papers)
+    stats = extractor.extract_batch(papers, parallel=parallel)
 
 
 # ==================== 辅助功能 ====================
@@ -298,11 +308,14 @@ def main():
   # 提取单篇论文，指定模型
   python scripts/extract.py single --model "Qwen/Qwen2.5-7B-Instruct"
   
-  # 批量提取，使用gpt-4o-mini
-  python scripts/extract.py batch --model gpt-4o-mini
+  # 批量提取，使用gpt-4o-mini，并行4个worker
+  python scripts/extract.py batch --model gpt-4o-mini --workers 4
   
   # 批量提取，使用full模式和特定模型
   python scripts/extract.py batch full --model "Qwen/Qwen2.5-72B-Instruct"
+  
+  # 批量提取，禁用并行（串行模式）
+  python scripts/extract.py batch --no-parallel
   
   # 列出所有可用模型
   python scripts/extract.py --list-models
@@ -318,6 +331,13 @@ def main():
                        help='提取模式（可选）')
     parser.add_argument('--model', '-m',
                        help='模型名称')
+    parser.add_argument('--no-parallel',
+                       action='store_true',
+                       help='禁用并行处理（仅batch模式）')
+    parser.add_argument('--workers', '-w',
+                       type=int,
+                       default=None,
+                       help='并行worker数量（默认=CPU核心数，最大4）')
     
     args = parser.parse_args()
     
@@ -329,7 +349,12 @@ def main():
         extract_single_interactive(mode=args.mode, model=args.model)
     
     elif args.command == 'batch':
-        extract_batch_interactive(mode=args.mode, model=args.model)
+        extract_batch_interactive(
+            mode=args.mode, 
+            model=args.model,
+            parallel=not args.no_parallel,
+            workers=args.workers
+        )
     
     elif args.command == 'prompt':
         show_prompt()
