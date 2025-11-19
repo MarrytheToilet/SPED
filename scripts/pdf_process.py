@@ -215,18 +215,27 @@ def cmd_upload(args):
             # 上传文件并移动
             success = 0
             for pdf, url in zip(to_upload, urls):
+                # 先上传文件
                 with open(pdf, 'rb') as f:
-                    if session.put(url, data=f, timeout=120).status_code in [200, 201]:
-                        # 标记已上传
-                        status_mgr.mark_uploaded(pdf.name, batch_id)
-                        # 移动到processed目录
-                        dest = PROCESSED_PDF_DIR / pdf.name
+                    upload_status = session.put(url, data=f, timeout=120).status_code
+                
+                # 文件关闭后再移动（避免Windows文件锁定问题）
+                if upload_status in [200, 201]:
+                    # 标记已上传
+                    status_mgr.mark_uploaded(pdf.name, batch_id)
+                    # 移动到processed目录
+                    dest = PROCESSED_PDF_DIR / pdf.name
+                    try:
                         shutil.move(str(pdf), str(dest))
                         success += 1
                         uploaded_total += 1
                         print(f"  ✅ {pdf.name} → 已移至 pdfs_processed/")
-                    else:
-                        print(f"  ❌ {pdf.name}")
+                    except Exception as move_err:
+                        print(f"  ⚠️  {pdf.name} 上传成功，但移动失败: {move_err}")
+                        success += 1
+                        uploaded_total += 1
+                else:
+                    print(f"  ❌ {pdf.name}")
             
             print(f"  完成: {success}/{len(to_upload)}")
             print(f"  Batch ID: {batch_id}")
