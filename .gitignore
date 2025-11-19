@@ -76,14 +76,35 @@ log/
 *.db-journal
 
 # Data files - ignore contents but keep structure
-data/raw/*
-data/processed/*
-data/uploads/*
-data/exports/*
+# Raw data
+data/raw/pdfs/*
+data/raw/pdfs_processed/*
 !data/raw/.gitkeep
+!data/raw/pdfs/.gitkeep
+!data/raw/pdfs_processed/.gitkeep
+
+# Processed data
+data/processed/parsed/*
+data/processed/extracted/*
+data/processed/analyzed/*
 !data/processed/.gitkeep
+!data/processed/parsed/.gitkeep
+!data/processed/extracted/.gitkeep
+!data/processed/analyzed/.gitkeep
+
+# Uploads tracking
+data/uploads/upload_batches.csv
+data/uploads/processing_status.json
 !data/uploads/.gitkeep
+
+# Exports
+data/exports/*
 !data/exports/.gitkeep
+
+# Database
+data/*.db
+data/*.sqlite
+data/*.sqlite3
 
 # Documentation builds
 docs/_build/
