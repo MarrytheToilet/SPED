@@ -50,12 +50,12 @@ class StatusManager:
     
     def _load(self):
         if self.status_file.exists():
-            with open(self.status_file) as f:
+            with open(self.status_file, encoding='utf-8') as f:
                 return json.load(f)
         return {"uploaded": {}, "downloaded": [], "analyzed": []}
     
     def _save(self):
-        with open(self.status_file, 'w') as f:
+        with open(self.status_file, 'w', encoding='utf-8') as f:
             json.dump(self.status, f, ensure_ascii=False, indent=2)
     
     def is_uploaded(self, pdf_name):
