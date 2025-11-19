@@ -384,7 +384,7 @@ def cmd_download(args):
 
 # ==================== 主函数 ====================
 def main():
-    parser = argparse.ArgumentParser(description="PDF Pipeline（智能去重版）")
+    parser = argparse.ArgumentParser(description="PDF Pipeline")
     sub = parser.add_subparsers(dest='cmd')
     
     up = sub.add_parser('upload', help='上传PDF（自动去重）')

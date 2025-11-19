@@ -7,7 +7,7 @@ from pathlib import Path
 from loguru import logger
 
 # 添加项目路径
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))  # scripts/ -> sped/
 
 from src.database.db_manager import DatabaseManager
 from src.database.csv_exporter import CSVExporter, export_all_formats

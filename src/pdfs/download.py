@@ -18,7 +18,8 @@ from settings import (
     BATCH_CSV,
     PARSED_DIR,
     DOWNLOAD_RETRY,
-    DOWNLOAD_TIMEOUT
+    DOWNLOAD_TIMEOUT,
+    DOWNLOAD_CHUNK_SIZE
 )
 
 # OUTPUT_DIR是parsed/output
@@ -38,7 +39,7 @@ def get_batch_results(batch_id):
     url = f"{API_BASE}/extract-results/batch/{batch_id}"
     
     try:
-        response = requests.get(url, headers=HEADERS, timeout=30)
+        response = requests.get(url, headers=HEADERS, timeout=HTTP_REQUEST_TIMEOUT)
         if response.status_code != 200:
             print(f"❌ 获取批次结果失败：HTTP {response.status_code}")
             return None
@@ -71,7 +72,7 @@ def download_file(url, save_path, retry=DOWNLOAD_RETRY):
             response = requests.get(url, timeout=DOWNLOAD_TIMEOUT, stream=True)
             if response.status_code == 200:
                 with open(save_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
+                    for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
                         if chunk:
                             f.write(chunk)
                 return True

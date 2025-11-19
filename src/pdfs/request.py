@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from settings import (
     MINERU_API_BASE as API_BASE,
     MINERU_HEADERS as HEADERS,
-    BATCH_CSV
+    BATCH_CSV,
+    HTTP_REQUEST_TIMEOUT
 )
 
 
@@ -30,7 +31,7 @@ def check_batch_status(batch_id):
     url = f"{API_BASE}/extract-results/batch/{batch_id}"
     
     try:
-        response = requests.get(url, headers=HEADERS, timeout=30)
+        response = requests.get(url, headers=HEADERS, timeout=HTTP_REQUEST_TIMEOUT)
         
         if response.status_code != 200:
             return {

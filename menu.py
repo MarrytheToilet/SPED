@@ -38,13 +38,19 @@ def print_main_menu():
     """打印主菜单"""
     print(f"{GREEN}{BOLD}主菜单：{END}")
     print()
-    print(f"  {CYAN}【数据提取】{END}")
+    print(f"  {CYAN}【完整工作流程】{END}")
+    print(f"    {BOLD}W.{END} 📖 查看完整工作流程指南")
+    print()
+    print(f"  {CYAN}【第一步：PDF处理】{END}")
+    print(f"    {BOLD}P.{END} 📄 PDF处理菜单（上传/查询/下载）")
+    print()
+    print(f"  {CYAN}【第二步：数据提取】{END}")
     print(f"    {BOLD}1.{END} 📊 测试系统配置")
     print(f"    {BOLD}2.{END} 📝 提取单个论文（交互式选择）")
     print(f"    {BOLD}3.{END} 🚀 批量提取所有论文")
     print(f"    {BOLD}4.{END} 🧪 测试单条数据提取")
     print()
-    print(f"  {CYAN}【数据库管理】{END}")
+    print(f"  {CYAN}【第三步：数据库管理】{END}")
     print(f"    {BOLD}5.{END} 💾 数据库管理工具（交互式菜单）")
     print(f"    {BOLD}6.{END} 📥 快速：批量导入JSON到数据库")
     print(f"    {BOLD}7.{END} 📤 快速：导出所有CSV格式")
@@ -60,13 +66,83 @@ def print_main_menu():
     print()
 
 
-def run_extract_test():
+def show_workflow_guide():
+    """显示完整工作流程指南"""
+    clear_screen()
+    print(f"{BLUE}{BOLD}{'='*80}{END}")
+    print(f"{BLUE}{BOLD}           完整工作流程指南           {END}")
+    print(f"{BLUE}{BOLD}{'='*80}{END}\n")
+    
+    print(f"{GREEN}{BOLD}工作流程概览：{END}")
+    print(f"""
+    {CYAN}PDF文件{END} → {CYAN}MinerU解析{END} → {CYAN}LLM提取{END} → {CYAN}数据库存储{END} → {CYAN}导出分析{END}
+       ↓           ↓          ↓          ↓           ↓
+    上传PDF    下载结果   提取JSON    导入DB    导出Excel/CSV
+    """)
+    
+    print(f"{GREEN}{BOLD}详细步骤：{END}\n")
+    
+    print(f"{YELLOW}【第一步：PDF处理】{END}")
+    print(f"  1. 将PDF放入 {CYAN}data/raw/pdfs/{END}")
+    print(f"  2. 菜单选择 {BOLD}P{END} → 上传PDF到MinerU")
+    print(f"  3. 记录返回的 {CYAN}batch_id{END}")
+    print(f"  4. 菜单选择 {BOLD}P{END} → 查询状态（等待处理完成）")
+    print(f"  5. 菜单选择 {BOLD}P{END} → 下载结果到 {CYAN}data/processed/parsed/{END}")
+    print()
+    
+    print(f"{YELLOW}【第二步：数据提取】{END}")
+    print(f"  1. 菜单选择 {BOLD}1{END} → 测试系统配置（首次使用）")
+    print(f"  2. 菜单选择 {BOLD}2{END} → 提取单个论文（交互式）")
+    print(f"     或选择 {BOLD}3{END} → 批量提取所有论文")
+    print(f"  3. 提取结果保存到 {CYAN}data/processed/extracted/{END}")
+    print()
+    
+    print(f"{YELLOW}【第三步：数据库管理】{END}")
+    print(f"  1. 菜单选择 {BOLD}6{END} → 批量导入JSON到数据库")
+    print(f"  2. 菜单选择 {BOLD}8{END} → 查看数据库统计")
+    print(f"  3. 菜单选择 {BOLD}9{END} → 导出Excel多表")
+    print(f"     或选择 {BOLD}7{END} → 导出CSV格式")
+    print(f"  4. 导出文件保存到 {CYAN}data/exports/{END}")
+    print()
+    
+    print(f"{GREEN}{BOLD}快速开始（完整流程）：{END}")
+    print(f"  假设你有新的PDF论文需要处理：")
+    print(f"  {CYAN}P{END} → {CYAN}上传{END} → {CYAN}查询{END} → {CYAN}下载{END} → {CYAN}2/3{END} → {CYAN}6{END} → {CYAN}9{END}")
+    print()
+    
+    print(f"{MAGENTA}{BOLD}数据流向：{END}")
+    print(f"  data/raw/pdfs/")
+    print(f"    └→ MinerU处理")
+    print(f"       └→ data/processed/parsed/[论文]/full.md")
+    print(f"          └→ LLM提取")
+    print(f"             └→ data/processed/extracted/[论文].json")
+    print(f"                └→ 导入数据库")
+    print(f"                   └→ data/artificial_joint.db")
+    print(f"                      └→ 导出")
+    print(f"                         └→ data/exports/*.xlsx/*.csv")
+    print()
+    
+    print(f"{BLUE}{BOLD}{'='*80}{END}")
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
+def run_pdf_menu():
+    """PDF处理菜单"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}PDF处理菜单{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_process.py")
+    
+    input(f"\n{GREEN}按回车键返回主菜单...{END}")
+
+
     """测试系统配置"""
     print(f"\n{BLUE}{'='*80}{END}")
     print(f"{BLUE}测试系统配置{END}")
     print(f"{BLUE}{'='*80}{END}\n")
     
-    os.system("python extract.py test")
+    os.system("python scripts/extract.py test")
     
     input(f"\n{GREEN}按回车键返回主菜单...{END}")
 
@@ -77,7 +153,7 @@ def run_extract_single():
     print(f"{BLUE}提取单个论文{END}")
     print(f"{BLUE}{'='*80}{END}\n")
     
-    os.system("python extract.py single")
+    os.system("python scripts/extract.py single")
     
     input(f"\n{GREEN}按回车键返回主菜单...{END}")
 
@@ -92,7 +168,7 @@ def run_extract_batch():
     confirm = input(f"{GREEN}确认开始批量提取？(y/n): {END}")
     
     if confirm.lower() == 'y':
-        os.system("python extract.py batch")
+        os.system("python scripts/extract.py batch")
     else:
         print(f"\n{YELLOW}已取消{END}")
     
@@ -209,7 +285,7 @@ def run_database_menu():
     print(f"{BLUE}启动数据库管理工具{END}")
     print(f"{BLUE}{'='*80}{END}\n")
     
-    os.system("python database.py")
+    os.system("python scripts/database.py")
     
     input(f"\n{GREEN}按回车键返回主菜单...{END}")
 
@@ -533,11 +609,17 @@ def main():
             print_header()
             print_main_menu()
             
-            choice = input(f"{GREEN}请输入选项 (0-12): {END}").strip()
+            choice = input(f"{GREEN}请输入选项 (0-12, W, P): {END}").strip().lower()
             
             if choice == "0":
                 print(f"\n{BLUE}再见！👋{END}\n")
                 sys.exit(0)
+            
+            elif choice == "w":
+                show_workflow_guide()
+            
+            elif choice == "p":
+                run_pdf_menu()
             
             elif choice == "1":
                 run_extract_test()

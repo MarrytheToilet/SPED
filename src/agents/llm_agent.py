@@ -16,7 +16,71 @@ except ImportError:
     OpenAI = None
 
 from .base_agent import BaseAgent
-from settings import OPENAI_API_KEY, OPENAI_API_BASE, OPENAI_MODEL, CHUNK_SIZE, CHUNK_OVERLAP
+from settings import (
+    OPENAI_API_KEY, 
+    OPENAI_API_BASE, 
+    OPENAI_MODEL, 
+    CHUNK_SIZE, 
+    CHUNK_OVERLAP,
+    LLM_TEMPERATURE,
+    MODEL_MAX_TOKENS,
+    CHUNK_MODE_MAX_TOKENS
+)
+
+
+class LLMExtractionAgent(BaseAgent):
+    """LLM数据提取Agent"""
+    
+    def __init__(self, mode: str = "full", provider: str = None, model: str = None):
+        """
+        初始化LLM提取Agent
+        
+        Args:
+            mode: 提取模式 - "full" 或 "chunk"（默认full）
+            provider: LLM供应商，如 'openai', 'siliconflow'等，None则使用默认
+            model: 模型名称，如 'gpt-4o', 'Qwen/Qwen2.5-72B-Instruct'等，None则使用默认
+        """
+        super().__init__()
+        
+        # 获取LLM配置
+        if provider or model:
+            import settings
+            config = settings.get_llm_config(provider, model)
+            self.api_key = config["api_key"]
+            self.api_base = config["api_base"]
+            self.model = config["model"]
+            self.provider_name = provider if provider else "default"
+        else:
+            self.api_key = OPENAI_API_KEY
+            self.api_base = OPENAI_API_BASE
+            self.model = OPENAI_MODEL
+            self.provider_name = "default"
+        
+        self.mode = mode.lower()
+        
+        if self.mode not in ["chunk", "full"]:
+            raise ValueError(f"不支持的模式: {mode}，请使用 'chunk' 或 'full'")
+        
+        # 初始化OpenAI客户端
+        if OpenAI is None:
+            raise ImportError("请安装 openai 包: pip install openai")
+        
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.api_base
+        )
+        
+        # 初始化分块器
+        self.chunker = TextChunker()
+        
+        # 加载Prompt
+        self.prompt_template = self._load_prompt()
+        
+        print(f"[LLMAgent] 初始化完成")
+        print(f"  模式: {self.mode}")
+        print(f"  供应商: {self.provider_name}")
+        print(f"  模型: {self.model}")
+        print(f"  API地址: {self.api_base}")
 
 
 class TextChunker:
@@ -139,19 +203,58 @@ class TextChunker:
 
 
 class LLMExtractionAgent(BaseAgent):
-    """LLM提取Agent"""
+    """LLM提取Agent - 支持chunk和full两种模式，支持动态选择模型"""
     
-    def __init__(self, schema_path: str = None):
-        super().__init__(name="LLM提取Agent", description="Chunking迭代式提取")
+    def __init__(self, mode: str = "full", model: str = None):
+        """
+        初始化LLM提取Agent
         
-        self.client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_API_BASE)
-        self.model = OPENAI_MODEL
-        self.chunker = TextChunker()
+        Args:
+            mode: 提取模式 - "chunk" (分块迭代式提取) 或 "full" (全文一次性提取)
+            model: 模型名称，如 'gpt-4o', 'Qwen/Qwen2.5-72B-Instruct'等，None则使用默认
+        """
+        mode_desc = "分块迭代式提取" if mode == "chunk" else "全文一次性提取"
+        super().__init__(name="LLM提取Agent", description=mode_desc)
         
-        # 加载prompt
-        prompt_path = Path(__file__).parent.parent.parent / "prompts" / "prompt.md"
-        with open(prompt_path, 'r', encoding='utf-8') as f:
-            self.prompt_template = f.read()
+        # 获取模型配置
+        if model:
+            import settings
+            config = settings.get_model_config(model)
+            self.api_key = config["api_key"]
+            self.api_base = config["api_base"]
+            self.model = model
+            self.provider_name = config["provider"]
+        else:
+            from settings import OPENAI_API_KEY, OPENAI_API_BASE, OPENAI_MODEL, LLM_PROVIDER
+            self.api_key = OPENAI_API_KEY
+            self.api_base = OPENAI_API_BASE
+            self.model = OPENAI_MODEL
+            self.provider_name = LLM_PROVIDER
+        
+        # 获取当前模型的max_tokens限制
+        self.max_tokens = MODEL_MAX_TOKENS.get(self.model, 8000)  # 默认8000
+        
+        self.mode = mode.lower()
+        
+        if self.mode not in ["chunk", "full"]:
+            raise ValueError(f"不支持的模式: {mode}，请使用 'chunk' 或 'full'")
+        
+        # 初始化OpenAI客户端
+        if OpenAI is None:
+            raise ImportError("请安装 openai 包: pip install openai")
+        
+        self.client = OpenAI(api_key=self.api_key, base_url=self.api_base)
+        self.chunker = TextChunker() if mode == "chunk" else None
+        
+        # 使用prompt构建器加载prompt
+        from ..utils.prompt_builder import build_prompt
+        self.prompt_template = build_prompt(mode=self.mode)
+        
+        print(f"[LLMAgent] 初始化完成")
+        print(f"  模式: {self.mode}")
+        print(f"  模型: {self.model}")
+        print(f"  供应商: {self.provider_name}")
+        print(f"  API地址: {self.api_base}")
     
     def _generate_dataid(self, paper_id: str) -> str:
         """生成dataid"""
@@ -162,7 +265,22 @@ class LLMExtractionAgent(BaseAgent):
     
     def process(self, input_data: Dict) -> Dict:
         """
-        主流程: 分块迭代提取
+        主流程: 根据mode选择处理方式
+        
+        Args:
+            input_data: 包含paper_id和full_text_path的字典
+        
+        Returns:
+            提取结果字典
+        """
+        if self.mode == "full":
+            return self.process_full(input_data)
+        else:
+            return self.process_chunk(input_data)
+    
+    def process_chunk(self, input_data: Dict) -> Dict:
+        """
+        分块迭代提取模式
         
         流程:
         1. 读取文本
@@ -182,7 +300,7 @@ class LLMExtractionAgent(BaseAgent):
         dataid = self._generate_dataid(paper_id)
         
         self.log_info(f"{'='*80}")
-        self.log_info(f"开始提取论文: {paper_id}")
+        self.log_info(f"开始提取论文 [分块模式]: {paper_id}")
         self.log_info(f"DataID: {dataid}")
         self.log_info(f"原始文本长度: {len(text)} 字符")
         self.log_info(f"{'='*80}")
@@ -261,27 +379,122 @@ class LLMExtractionAgent(BaseAgent):
             self.log_info(f"返回 {len(all_records)} 条记录")
             return {"dataid": dataid, "paper_id": paper_id, "records": all_records, "count": len(all_records)}
     
+    def process_full(self, input_data: Dict) -> Dict:
+        """
+        全文一次性提取模式
+        
+        流程:
+        1. 读取完整文本
+        2. 过滤参考文献（可选）
+        3. 将全文一次性发送给LLM
+        4. 添加元数据并返回
+        
+        优点: 
+        - LLM能看到完整上下文
+        - 无需手动判断new/enrich
+        - 处理速度更快（只调用一次API）
+        
+        缺点:
+        - 受模型context window限制
+        - 长文本可能被截断
+        - 成本可能更高
+        """
+        paper_id = input_data.get("paper_id", "unknown")
+        full_text_path = input_data.get("full_text_path")
+        
+        # 读取文本
+        with open(full_text_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        
+        # 生成dataid
+        dataid = self._generate_dataid(paper_id)
+        
+        self.log_info(f"{'='*80}")
+        self.log_info(f"开始提取论文 [全文模式]: {paper_id}")
+        self.log_info(f"DataID: {dataid}")
+        self.log_info(f"原始文本长度: {len(text)} 字符")
+        self.log_info(f"{'='*80}")
+        
+        # 过滤参考文献（使用TextChunker的过滤功能）
+        chunker = TextChunker()
+        filtered_text = chunker.filter_references(text)
+        
+        self.log_info(f"过滤后文本长度: {len(filtered_text)} 字符")
+        
+        # 构建完整prompt
+        from ..utils.prompt_builder import add_paper_text
+        prompt = add_paper_text(self.prompt_template, filtered_text, mode="full")
+        
+        self.log_info(f"开始调用LLM (全文模式)...")
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "你是专业的数据提取专家。只返回纯JSON，不要添加任何额外文字。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=LLM_TEMPERATURE,
+                response_format={"type": "json_object"},
+                max_tokens=self.max_tokens  # 根据模型动态设置
+            )
+            
+            content = response.choices[0].message.content
+            self.log_debug(f"LLM返回内容（前200字符）: {content[:200]}")
+            
+            result = self._parse_json(content)
+            
+            # 解析结果
+            records = []
+            if "records" in result and result["records"]:
+                records = self._process_records(result["records"])
+            elif isinstance(result, list):
+                records = self._process_records(result)
+            elif isinstance(result, dict) and len(result) > 0:
+                # 可能是单条记录
+                records = [result]
+            
+            self.log_info(f"\n{'='*80}")
+            self.log_info(f"提取完成")
+            self.log_info(f"  提取记录数: {len(records)}")
+            self.log_info(f"{'='*80}")
+            
+            # 添加元数据
+            for record in records:
+                if 'dataid' not in record or not record['dataid']:
+                    record['dataid'] = dataid
+                if 'paper_id' not in record:
+                    record['paper_id'] = paper_id
+            
+            # 返回结果
+            if len(records) == 0:
+                self.log_warning("未提取到任何实验数据")
+                return {"dataid": dataid, "paper_id": paper_id, "records": [], "count": 0}
+            elif len(records) == 1:
+                self.log_info(f"返回单条记录")
+                return records[0]
+            else:
+                self.log_info(f"返回 {len(records)} 条记录")
+                return {"dataid": dataid, "paper_id": paper_id, "records": records, "count": len(records)}
+            
+        except Exception as e:
+            self.log_error(f"全文提取失败: {e}")
+            import traceback
+            self.log_debug(f"详细错误: {traceback.format_exc()}")
+            return {"dataid": dataid, "paper_id": paper_id, "records": [], "count": 0, "error": str(e)}
+    
     def _extract_from_chunk(self, chunk: Dict, existing_records: List[Dict]) -> List[Dict]:
         """从chunk提取数据"""
         # 构建上下文
         context = self._build_context(existing_records)
         
-        # 构建prompt
-        prompt = f"""{self.prompt_template}
-
----
-
-## 当前任务
-
-{context}
-
-### 当前文本片段 (Chunk {chunk['chunk_id']}):
-```
-{chunk['content']}
-```
-
-请提取数据，返回纯JSON格式。
-"""
+        # 构建完整prompt
+        from ..utils.prompt_builder import add_paper_text
+        prompt = add_paper_text(self.prompt_template, chunk['content'], mode="chunk")
+        
+        # 将context插入到prompt中（在当前任务之前）
+        if context:
+            prompt = prompt.replace("## 当前任务", f"## 已提取记录\n\n{context}\n\n## 当前任务")
         
         try:
             response = self.client.chat.completions.create(
@@ -290,9 +503,9 @@ class LLMExtractionAgent(BaseAgent):
                     {"role": "system", "content": "你是专业的数据提取专家。只返回纯JSON，不要添加任何额外文字。保持JSON简洁完整。"},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.1,
+                temperature=LLM_TEMPERATURE,
                 response_format={"type": "json_object"},
-                max_tokens=4096  # 限制响应长度，避免不完整
+                max_tokens=min(CHUNK_MODE_MAX_TOKENS, self.max_tokens)  # chunk模式用较小值，避免过长
             )
             
             content = response.choices[0].message.content

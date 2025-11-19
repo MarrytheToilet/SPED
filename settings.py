@@ -11,7 +11,7 @@ load_dotenv()
 # ==========================
 # 项目路径配置
 # ==========================
-BASE_DIR = Path(__file__).parent  # settings.py现在在项目根目录
+BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 SRC_DIR = BASE_DIR / "src"
 
@@ -23,8 +23,6 @@ PARSED_DIR = PROCESSED_DIR / "parsed"
 EXTRACTED_DIR = PROCESSED_DIR / "extracted"
 ANALYZED_DIR = PROCESSED_DIR / "analyzed"
 UPLOADS_DIR = DATA_DIR / "uploads"
-
-# Schema目录
 SCHEMA_DIR = BASE_DIR / "data_schema"
 
 # 确保目录存在
@@ -43,7 +41,9 @@ MINERU_HEADERS = {
     "Authorization": f"Bearer {MINERU_TOKEN}"
 }
 
-# 上传配置（从环境变量读取，提供默认值）
+# ==========================
+# 上传配置
+# ==========================
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "200"))
 UPLOAD_CONFIG = {
     "enable_formula": os.getenv("UPLOAD_ENABLE_FORMULA", "True").lower() == "true",
@@ -51,38 +51,183 @@ UPLOAD_CONFIG = {
     "layout_model": os.getenv("UPLOAD_LAYOUT_MODEL", "doclayout_yolo"),
     "enable_table": os.getenv("UPLOAD_ENABLE_TABLE", "True").lower() == "true",
 }
-
 FILE_CONFIG = {
     "parse_method": os.getenv("FILE_PARSE_METHOD", "auto"),
     "apply_ocr": os.getenv("FILE_APPLY_OCR", "False").lower() == "true",
 }
-
-# 批次记录文件
 BATCH_CSV = UPLOADS_DIR / "upload_batches.csv"
 
 # ==========================
-# 数据库配置 (SQLite)
+# 数据库配置
 # ==========================
 DB_PATH = os.getenv("DB_PATH", str(DATA_DIR / "artificial_joint.db"))
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 # ==========================
-# OpenAI API 配置
+# LLM API 配置
 # ==========================
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "https://api.zmon.me/v1")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+# 模型配置字典
+AVAILABLE_MODELS = {
+    # OpenAI
+    "gpt-4o": {
+        "provider": "openai",
+        "api_key": os.getenv("OPENAI_API_KEY", ""),
+        "api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+    },
+    "gpt-4o-mini": {
+        "provider": "openai",
+        "api_key": os.getenv("OPENAI_API_KEY", ""),
+        "api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+    },
+    "gpt-4-turbo": {
+        "provider": "openai",
+        "api_key": os.getenv("OPENAI_API_KEY", ""),
+        "api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+    },
+    # 硅基流动
+    "Qwen/Qwen2.5-72B-Instruct": {
+        "provider": "siliconflow",
+        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
+        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
+    },
+    "Qwen/Qwen2.5-7B-Instruct": {
+        "provider": "siliconflow",
+        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
+        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
+    },
+    "moonshotai/Kimi-K2-Instruct-0905": {
+        "provider": "siliconflow",
+        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
+        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
+    },
+    "deepseek-ai/DeepSeek-V2.5": {
+        "provider": "siliconflow",
+        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
+        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
+    },
+    # DeepSeek
+    "deepseek-chat": {
+        "provider": "deepseek",
+        "api_key": os.getenv("DEEPSEEK_API_KEY", ""),
+        "api_base": os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1"),
+    },
+    # 智谱AI
+    "glm-4-plus": {
+        "provider": "zhipu",
+        "api_key": os.getenv("ZHIPU_API_KEY", ""),
+        "api_base": os.getenv("ZHIPU_API_BASE", "https://open.bigmodel.cn/api/paas/v4"),
+    },
+    "glm-4-flash": {
+        "provider": "zhipu",
+        "api_key": os.getenv("ZHIPU_API_KEY", ""),
+        "api_base": os.getenv("ZHIPU_API_BASE", "https://open.bigmodel.cn/api/paas/v4"),
+    },
+}
+
+# 默认模型
+DEFAULT_MODEL = os.getenv("LLM_MODEL", "moonshotai/Kimi-K2-Instruct-0905")
+
+# 当前使用的模型配置
+if DEFAULT_MODEL in AVAILABLE_MODELS:
+    current_model_config = AVAILABLE_MODELS[DEFAULT_MODEL]
+    OPENAI_API_KEY = current_model_config["api_key"]
+    OPENAI_API_BASE = current_model_config["api_base"]
+    OPENAI_MODEL = DEFAULT_MODEL
+    LLM_PROVIDER = current_model_config["provider"]
+else:
+    print(f"⚠️  警告: 模型 '{DEFAULT_MODEL}' 不在预定义列表中，使用环境变量配置")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+    OPENAI_MODEL = DEFAULT_MODEL
+    LLM_PROVIDER = "custom"
+
 OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-ada-002")
 
 # ==========================
-# Agent 配置
+# 动态配置函数
 # ==========================
-AGENT_CONFIG = {
-    "max_iterations": int(os.getenv("AGENT_MAX_ITERATIONS", "5")),
-    "temperature": float(os.getenv("AGENT_TEMPERATURE", "0.1")),
-    "max_tokens": int(os.getenv("AGENT_MAX_TOKENS", "4000")),
-    "enable_memory": os.getenv("AGENT_ENABLE_MEMORY", "True").lower() == "true",
+
+def get_model_config(model: str) -> dict:
+    """
+    获取指定模型的配置
+    
+    Args:
+        model: 模型名称，如 'gpt-4o', 'Qwen/Qwen2.5-72B-Instruct' 等
+    
+    Returns:
+        dict: 包含 provider, api_key, api_base, model 的配置字典
+    
+    Raises:
+        ValueError: 如果模型不存在或API密钥未配置
+    """
+    if model not in AVAILABLE_MODELS:
+        available = list(AVAILABLE_MODELS.keys())
+        raise ValueError(
+            f"未知的模型 '{model}'。\n"
+            f"可用模型: {', '.join(available[:5])}... "
+            f"(共{len(available)}个，使用 --list-models 查看全部)"
+        )
+    
+    config = AVAILABLE_MODELS[model]
+    
+    # 检查API key是否配置
+    if not config["api_key"]:
+        # 根据provider给出提示
+        provider = config.get("provider", "").upper()
+        env_var = f"{provider}_API_KEY" if provider else "API_KEY"
+        raise ValueError(
+            f"模型 '{model}' 的API密钥未配置，"
+            f"请在 .env 文件中设置 {env_var}"
+        )
+    
+    return {
+        "provider": config["provider"],
+        "api_key": config["api_key"],
+        "api_base": config["api_base"],
+        "model": model,
+    }
+
+
+def list_available_models() -> dict:
+    """
+    列出所有可用的模型及其配置状态
+    
+    Returns:
+        dict: {model: {provider, has_key, api_base}}
+    """
+    result = {}
+    for model, config in AVAILABLE_MODELS.items():
+        result[model] = {
+            "provider": config["provider"],
+            "has_key": bool(config["api_key"]),
+            "api_base": config["api_base"],
+        }
+    return result
+
+# ==========================
+# LLM 调用配置
+# ==========================
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.1"))
+LLM_TOP_P = float(os.getenv("LLM_TOP_P", "0.95"))
+LLM_FREQUENCY_PENALTY = float(os.getenv("LLM_FREQUENCY_PENALTY", "0.0"))
+LLM_PRESENCE_PENALTY = float(os.getenv("LLM_PRESENCE_PENALTY", "0.0"))
+
+# 模型的max_tokens限制配置
+MODEL_MAX_TOKENS = {
+    "gpt-4o": int(os.getenv("GPT4O_MAX_TOKENS", "16000")),
+    "gpt-4o-mini": int(os.getenv("GPT4O_MINI_MAX_TOKENS", "16000")),
+    "gpt-4-turbo": int(os.getenv("GPT4_TURBO_MAX_TOKENS", "16000")),
+    "Qwen/Qwen2.5-72B-Instruct": int(os.getenv("QWEN_72B_MAX_TOKENS", "30000")),
+    "Qwen/Qwen2.5-7B-Instruct": int(os.getenv("QWEN_7B_MAX_TOKENS", "30000")),
+    "moonshotai/Kimi-K2-Instruct-0905": int(os.getenv("KIMI_MAX_TOKENS", "32000")),
+    "deepseek-ai/DeepSeek-V2.5": int(os.getenv("DEEPSEEK_V25_MAX_TOKENS", "30000")),
+    "deepseek-chat": int(os.getenv("DEEPSEEK_CHAT_MAX_TOKENS", "16000")),
+    "glm-4-plus": int(os.getenv("GLM4_PLUS_MAX_TOKENS", "16000")),
+    "glm-4-flash": int(os.getenv("GLM4_FLASH_MAX_TOKENS", "16000")),
 }
+
+# Chunk模式的max_tokens限制（通常小于full模式）
+CHUNK_MODE_MAX_TOKENS = int(os.getenv("CHUNK_MODE_MAX_TOKENS", "4096"))
 
 # ==========================
 # 文本分块配置
@@ -107,3 +252,9 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 # ==========================
 DOWNLOAD_RETRY = int(os.getenv("DOWNLOAD_RETRY", "3"))
 DOWNLOAD_TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "300"))
+DOWNLOAD_CHUNK_SIZE = int(os.getenv("DOWNLOAD_CHUNK_SIZE", "8192"))
+
+# ==========================
+# HTTP 请求配置
+# ==========================
+HTTP_REQUEST_TIMEOUT = int(os.getenv("HTTP_REQUEST_TIMEOUT", "30"))
