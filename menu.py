@@ -141,10 +141,15 @@ def run_pdf_menu():
         print(f"  {BOLD}4.{END} 📈 查看统计信息")
         print(f"  {BOLD}5.{END} 🔧 完整流程：上传→查询→下载")
         print()
+        print(f"{YELLOW}{BOLD}高级选项：{END}\n")
+        print(f"  {BOLD}6.{END} ⚠️  下载部分完成的批次")
+        print(f"  {BOLD}7.{END} 🔄 重置卡住的批次")
+        print(f"  {BOLD}8.{END} 🔃 强制重新下载批次")
+        print()
         print(f"  {BOLD}0.{END} 🔙 返回主菜单")
         print()
         
-        choice = input(f"{GREEN}请选择操作 (0-5): {END}").strip()
+        choice = input(f"{GREEN}请选择操作 (0-8): {END}").strip()
         
         if choice == "0":
             break
@@ -158,6 +163,12 @@ def run_pdf_menu():
             run_pdf_stats()
         elif choice == "5":
             run_pdf_full_workflow()
+        elif choice == "6":
+            run_pdf_download_partial()
+        elif choice == "7":
+            run_pdf_reset_batch()
+        elif choice == "8":
+            run_pdf_force_download()
         else:
             print(f"\n{RED}❌ 无效选项{END}")
             input(f"\n{GREEN}按回车键继续...{END}")
@@ -218,6 +229,106 @@ def run_pdf_full_workflow():
     print(f"  2. 等待处理完成（自动查询）")
     print(f"  3. 下载解析结果")
     print()
+    
+    confirm = input(f"{GREEN}确认执行完整流程？(y/n): {END}").strip().lower()
+    if confirm != 'y':
+        return
+    
+    # 上传
+    print(f"\n{CYAN}{'='*60}{END}")
+    print(f"{CYAN}步骤 1/3: 上传PDF{END}")
+    print(f"{CYAN}{'='*60}{END}\n")
+    os.system("python scripts/pdf_process.py upload")
+    
+    # 查询
+    print(f"\n{CYAN}{'='*60}{END}")
+    print(f"{CYAN}步骤 2/3: 查询状态{END}")
+    print(f"{CYAN}{'='*60}{END}\n")
+    os.system("python scripts/pdf_process.py status")
+    
+    # 下载
+    print(f"\n{CYAN}{'='*60}{END}")
+    print(f"{CYAN}步骤 3/3: 下载结果{END}")
+    print(f"{CYAN}{'='*60}{END}\n")
+    os.system("python scripts/pdf_process.py download")
+    
+    print(f"\n{GREEN}{'='*60}{END}")
+    print(f"{GREEN}✅ 完整流程执行完成{END}")
+    print(f"{GREEN}{'='*60}{END}\n")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_download_partial():
+    """下载部分完成的批次"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}下载部分完成的批次{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    print(f"{YELLOW}此选项将下载已完成的文件，即使批次未全部完成{END}")
+    print(f"{YELLOW}适用于：批次卡住，但部分文件已处理完成的情况{END}\n")
+    
+    confirm = input(f"{GREEN}确认继续？(y/n): {END}").strip().lower()
+    if confirm != 'y':
+        return
+    
+    os.system("python scripts/pdf_process.py download --force-partial")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_reset_batch():
+    """重置批次状态"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}重置批次状态{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    print(f"{YELLOW}⚠️  重置批次将：{END}")
+    print(f"  - 从上传记录中移除")
+    print(f"  - 从下载记录中移除")
+    print(f"  - 允许重新上传和下载\n")
+    
+    # 先显示状态
+    os.system("python scripts/pdf_process.py status")
+    print()
+    
+    batch_id = input(f"{GREEN}请输入要重置的Batch ID (或按回车取消): {END}").strip()
+    if not batch_id:
+        return
+    
+    confirm = input(f"{YELLOW}确认重置批次 {batch_id}？(y/n): {END}").strip().lower()
+    if confirm != 'y':
+        return
+    
+    os.system(f"python scripts/pdf_process.py reset --batch-id {batch_id}")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_force_download():
+    """强制重新下载批次"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}强制重新下载批次{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    print(f"{YELLOW}此选项将强制重新下载指定批次，即使已下载过{END}\n")
+    
+    # 先显示状态
+    os.system("python scripts/pdf_process.py status")
+    print()
+    
+    batch_id = input(f"{GREEN}请输入要重新下载的Batch ID (或按回车取消): {END}").strip()
+    if not batch_id:
+        return
+    
+    confirm = input(f"{YELLOW}确认重新下载批次 {batch_id}？(y/n): {END}").strip().lower()
+    if confirm != 'y':
+        return
+    
+    os.system(f"python scripts/pdf_process.py force-download --batch-id {batch_id}")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
     
     confirm = input(f"{GREEN}确认开始完整流程？(y/n): {END}")
     

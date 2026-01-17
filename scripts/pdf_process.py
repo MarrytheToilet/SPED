@@ -77,6 +77,30 @@ class StatusManager:
             self.status["downloaded"].append(batch_id)
             self._save()
     
+    def unmark_downloaded(self, batch_id):
+        """取消已下载标记，允许重新下载"""
+        if batch_id in self.status["downloaded"]:
+            self.status["downloaded"].remove(batch_id)
+            self._save()
+            return True
+        return False
+    
+    def reset_batch(self, batch_id):
+        """完全重置批次状态（从uploaded和downloaded中移除）"""
+        removed = False
+        # 从uploaded中移除相关PDF
+        pdfs_to_remove = [pdf for pdf, bid in self.status["uploaded"].items() if bid == batch_id]
+        for pdf in pdfs_to_remove:
+            del self.status["uploaded"][pdf]
+            removed = True
+        # 从downloaded中移除
+        if batch_id in self.status["downloaded"]:
+            self.status["downloaded"].remove(batch_id)
+            removed = True
+        if removed:
+            self._save()
+        return removed
+    
     def get_stats(self):
         return {
             "uploaded": len(self.status["uploaded"]),
@@ -281,6 +305,8 @@ def cmd_status(args):
     print(f"\n{'='*70}\n📊 批次处理状态\n{'='*70}\n")
     
     session = create_session()
+    stuck_batches = []  # 记录卡住的批次
+    
     for b in batches:
         bid, idx = b['batch_id'], b['batch_index']
         print(f"📦 批次 {idx}: {bid}")
@@ -301,9 +327,26 @@ def cmd_status(args):
                 print(f"   ⏳ 处理中: {processing}")
                 if failed > 0:
                     print(f"   ❌ 失败: {failed}")
+                    # 显示失败的文件
+                    failed_files = [item.get("file_name", "unknown") for item in extract_results if item.get("state") == "failed"]
+                    for fname in failed_files[:3]:  # 只显示前3个
+                        print(f"      - {fname}")
+                    if len(failed_files) > 3:
+                        print(f"      ... 还有 {len(failed_files) - 3} 个文件")
+                
+                # 检查是否卡住（部分完成但未全部完成，且处理中为0）
+                if 0 < done < total and processing == 0 and failed > 0:
+                    print(f"   ⚠️  批次卡住: {done}/{total} 完成，{failed} 失败，0 处理中")
+                    stuck_batches.append((idx, bid))
+                
                 if done == total and total > 0:
                     is_dl = status_mgr.is_downloaded(bid)
                     print(f"   下载: {'✅ 已下载' if is_dl else '⬇️  待下载'}")
+                elif done > 0 and (done + failed) < total and processing == 0:
+                    # 部分完成但卡住了
+                    is_dl = status_mgr.is_downloaded(bid)
+                    if not is_dl:
+                        print(f"   💡 提示: 可使用 --force-download 下载已完成的 {done} 个文件")
         except Exception as e:
             print(f"   ❌ {e}")
         print()
@@ -315,11 +358,22 @@ def cmd_status(args):
     print(f"   已下载: {stats['downloaded']} 个批次")
     print(f"   已分析: {stats['analyzed']} 篇论文")
     print(f"{'='*70}")
-    print(f"\n💡 下一步: python {Path(__file__).name} download")
+    
+    if stuck_batches:
+        print(f"\n⚠️  发现 {len(stuck_batches)} 个卡住的批次:")
+        for idx, bid in stuck_batches:
+            print(f"   批次 {idx}: {bid}")
+        print(f"\n💡 处理建议:")
+        print(f"   1. 下载已完成文件: python {Path(__file__).name} download --force-partial")
+        print(f"   2. 重置批次状态: python {Path(__file__).name} reset --batch-id <batch_id>")
+    else:
+        print(f"\n💡 下一步: python {Path(__file__).name} download")
 
 # ==================== 下载命令 ====================
 def cmd_download(args):
     out = Path(args.output) if args.output else OUTPUT_DIR
+    force_redownload = getattr(args, 'force', False)
+    force_partial = getattr(args, 'force_partial', False)
     
     if not BATCH_CSV.exists():
         print("⚠️  未找到批次记录")
@@ -329,6 +383,11 @@ def cmd_download(args):
         batches = list(csv.DictReader(f))
     
     print(f"\n{'='*70}\n⬇️  下载解析结果\n{'='*70}\n")
+    if force_redownload:
+        print("⚠️  强制重新下载模式已启用")
+    if force_partial:
+        print("⚠️  部分下载模式已启用（下载已完成的文件）")
+    print()
     
     session = create_session()
     new, skipped = 0, 0
@@ -336,8 +395,8 @@ def cmd_download(args):
     for b in batches:
         bid, idx = b['batch_id'], b['batch_index']
         
-        # 检查是否已下载
-        if status_mgr.is_downloaded(bid):
+        # 检查是否已下载（除非强制重新下载）
+        if status_mgr.is_downloaded(bid) and not force_redownload:
             print(f"📦 批次 {idx}: {bid}")
             print(f"   ⏭️  已下载，跳过\n")
             skipped += 1
@@ -357,9 +416,23 @@ def cmd_download(args):
             extract_results = d.get("extract_result", [])
             total = len(extract_results)
             done = sum(1 for item in extract_results if item.get("state") == "done")
+            failed = sum(1 for item in extract_results if item.get("state") == "failed")
             
-            if done < total:
-                print(f"  ⏳ 处理中: {done}/{total} 个文件完成\n")
+            # 判断是否可以下载
+            can_download = False
+            if done == total and total > 0:
+                can_download = True
+            elif force_partial and done > 0:
+                can_download = True
+                print(f"  ⚠️  部分完成: {done}/{total} 个文件，将下载已完成的文件")
+            else:
+                print(f"  ⏳ 处理中: {done}/{total} 个文件完成")
+                if failed > 0:
+                    print(f"  ❌ 失败: {failed} 个文件")
+                print()
+                continue
+            
+            if not can_download:
                 continue
             
             # 下载文件
@@ -404,6 +477,154 @@ def cmd_download(args):
     print(f"{'='*70}")
     print(f"\n💡 下一步: python test_new_pipeline.py")
 
+# ==================== 重置命令 ====================
+def cmd_reset(args):
+    """重置批次状态，允许重新处理"""
+    batch_id = args.batch_id
+    
+    if not batch_id:
+        print("❌ 请指定要重置的batch_id")
+        print(f"   用法: python {Path(__file__).name} reset --batch-id <batch_id>")
+        return
+    
+    print(f"\n{'='*70}\n🔄 重置批次状态\n{'='*70}\n")
+    print(f"Batch ID: {batch_id}\n")
+    
+    # 检查batch是否存在
+    if not BATCH_CSV.exists():
+        print("⚠️  未找到批次记录")
+        return
+    
+    with open(BATCH_CSV) as f:
+        batches = list(csv.DictReader(f))
+    
+    batch_exists = any(b['batch_id'] == batch_id for b in batches)
+    if not batch_exists:
+        print(f"❌ 批次不存在: {batch_id}")
+        return
+    
+    # 重置状态
+    if status_mgr.reset_batch(batch_id):
+        print("✅ 批次状态已重置")
+        print("   - 已从上传记录中移除")
+        print("   - 已从下载记录中移除")
+        print(f"\n💡 现在可以:")
+        print(f"   1. 重新上传相关PDF: 将PDF从 pdfs_processed/ 移回 pdfs/")
+        print(f"   2. 重新下载结果: python {Path(__file__).name} download --force")
+    else:
+        print("⚠️  批次未在状态文件中，可能已经是清空状态")
+
+# ==================== 强制重新下载命令 ====================
+def cmd_force_download(args):
+    """强制重新下载指定批次"""
+    batch_id = args.batch_id
+    
+    if not batch_id:
+        print("❌ 请指定要重新下载的batch_id")
+        return
+    
+    print(f"\n{'='*70}\n⬇️  强制重新下载\n{'='*70}\n")
+    print(f"Batch ID: {batch_id}\n")
+    
+    # 取消已下载标记
+    if status_mgr.unmark_downloaded(batch_id):
+        print("✅ 已下载标记已移除")
+    else:
+        print("⚠️  批次未被标记为已下载")
+    
+    # 检查batch是否存在
+    if not BATCH_CSV.exists():
+        print("⚠️  未找到批次记录")
+        return
+    
+    with open(BATCH_CSV) as f:
+        reader = csv.DictReader(f)
+        batches = [b for b in reader if b['batch_id'] == batch_id]
+    
+    if not batches:
+        print(f"❌ 未找到批次: {batch_id}")
+        return
+    
+    # 创建临时CSV并下载
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv', newline='') as tmp:
+        writer = csv.DictWriter(tmp, fieldnames=['batch_index', 'batch_id', 'file_count', 'web_url', 'upload_time'])
+        writer.writeheader()
+        writer.writerows(batches)
+        tmp_path = tmp.name
+    
+    try:
+        # 临时替换CSV路径并下载
+        old_csv = BATCH_CSV
+        temp_csv_path = Path(tmp_path)
+        
+        # 直接读取临时CSV并下载
+        session = create_session()
+        out = OUTPUT_DIR
+        
+        for b in batches:
+            bid, idx = b['batch_id'], b['batch_index']
+            print(f"\n📦 批次 {idx}: {bid}")
+            
+            try:
+                r = session.get(f"{MINERU_API_BASE}/extract-results/batch/{bid}",
+                              headers=HEADERS, timeout=30)
+                
+                if r.status_code != 200 or r.json().get("code") != 0:
+                    print("  ❌ 查询失败")
+                    continue
+                
+                d = r.json()["data"]
+                extract_results = d.get("extract_result", [])
+                total = len(extract_results)
+                done = sum(1 for item in extract_results if item.get("state") == "done")
+                
+                print(f"  总计: {total} 个文件，完成: {done}")
+                
+                if done == 0:
+                    print("  ⚠️  没有已完成的文件")
+                    continue
+                
+                # 下载文件
+                batch_dir = out / f"batch_{idx}"
+                batch_dir.mkdir(exist_ok=True)
+                success = 0
+                
+                for f_info in extract_results:
+                    if f_info.get("state") != "done":
+                        continue
+                    
+                    did = f_info.get("data_id", "unknown")
+                    url = f_info.get("full_zip_url")
+                    if not url:
+                        continue
+                    
+                    safe = sanitize(did)
+                    zip_path = batch_dir / f"{safe}.zip"
+                    extract_dir = batch_dir / safe
+                    
+                    if download_file(url, zip_path):
+                        if unzip_file(zip_path, extract_dir):
+                            zip_path.unlink()
+                            success += 1
+                            print(f"  ✅ {did}")
+                
+                if success > 0:
+                    status_mgr.mark_downloaded(bid)
+                    print(f"  完成: {success} 个文件")
+            
+            except Exception as e:
+                print(f"  ❌ {e}")
+        
+        print(f"\n{'='*70}")
+        print(f"✅ 强制下载完成!")
+        print(f"{'='*70}")
+    
+    finally:
+        # 清理临时文件
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
 # ==================== 主函数 ====================
 def main():
     parser = argparse.ArgumentParser(description="PDF Pipeline")
@@ -416,6 +637,14 @@ def main():
     
     dl = sub.add_parser('download', help='下载结果（自动去重）')
     dl.add_argument('-o', '--output', help=f'输出目录(默认{OUTPUT_DIR})')
+    dl.add_argument('--force', action='store_true', help='强制重新下载（忽略已下载标记）')
+    dl.add_argument('--force-partial', action='store_true', help='下载部分完成的批次（已完成的文件）')
+    
+    reset = sub.add_parser('reset', help='重置批次状态')
+    reset.add_argument('--batch-id', required=True, help='要重置的batch ID')
+    
+    force_dl = sub.add_parser('force-download', help='强制重新下载指定批次')
+    force_dl.add_argument('--batch-id', required=True, help='要重新下载的batch ID')
     
     sub.add_parser('stats', help='查看统计信息')
     
@@ -439,6 +668,10 @@ def main():
         cmd_status(args)
     elif args.cmd == 'download':
         cmd_download(args)
+    elif args.cmd == 'reset':
+        cmd_reset(args)
+    elif args.cmd == 'force-download':
+        cmd_force_download(args)
     elif args.cmd == 'stats':
         s = status_mgr.get_stats()
         print(f"\n📊 处理统计:")
@@ -452,6 +685,13 @@ def main():
         print(f"   状态文件: {STATUS_JSON}")
     else:
         parser.print_help()
+        print(f"\n💡 常用命令:")
+        print(f"   上传PDF:     python {Path(__file__).name} upload")
+        print(f"   查询状态:    python {Path(__file__).name} status")
+        print(f"   下载结果:    python {Path(__file__).name} download")
+        print(f"   部分下载:    python {Path(__file__).name} download --force-partial")
+        print(f"   重置批次:    python {Path(__file__).name} reset --batch-id <id>")
+        print(f"   强制下载:    python {Path(__file__).name} force-download --batch-id <id>")
 
 if __name__ == "__main__":
     main()
