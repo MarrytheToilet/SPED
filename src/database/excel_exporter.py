@@ -3,6 +3,7 @@
 Excel多表导出器 - 按照schema规定的表结构导出为多sheet的Excel文件
 """
 import json
+import sqlite3
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
@@ -17,9 +18,24 @@ from .db_manager import DatabaseManager
 class ExcelExporter:
     """Excel多表导出类"""
     
+    # 中文表名到数据库表名的映射
+    TABLE_NAME_MAPPING = {
+        '基本信息表': 'basic_info',
+        '内衬基本信息表': 'liner_basic',
+        '球头基本信息表': 'head_basic',
+        '配合信息表': 'fitting_info',
+        '股骨柄基本信息表': 'stem_basic',
+        '内衬物理性能表': 'liner_properties',
+        '球头物理性能表': 'head_properties',
+        '股骨柄物理性能表': 'stem_properties',
+        '性能测试结果表': 'test_results',
+        '计算模拟参数表': 'simulation_params',
+        '计算模拟图像表': 'simulation_images'
+    }
+    
     def __init__(self, 
                  db_manager: Optional[DatabaseManager] = None,
-                 schema_file: Path = Path("data_schema/inferred_schema.json")):
+                 schema_file: Path = Path("data_schema/schema.json")):
         """
         初始化Excel导出器
         
@@ -38,7 +54,7 @@ class ExcelExporter:
                 return json.load(f)
         except Exception as e:
             logger.error(f"加载schema失败: {e}")
-            return {"tables": {}}
+            return {"schema_version": "2.0", "tables": []}
     
     def _parse_json_field(self, value: Any) -> Any:
         """
@@ -150,60 +166,77 @@ class ExcelExporter:
             是否成功
         """
         try:
-            # 查询所有数据
-            records = self.db.query_all()
-            
-            if not records:
-                logger.warning("没有数据可导出")
-                return False
-            
-            logger.info(f"共 {len(records)} 条记录待导出")
-            
             # 创建Excel工作簿
             wb = openpyxl.Workbook()
             wb.remove(wb.active)  # 删除默认sheet
             
-            tables = self.schema.get('tables', {})
+            # 支持新旧两种schema格式
+            tables = self.schema.get('tables', [])
+            if isinstance(tables, dict):
+                # 旧格式：tables是字典
+                tables_list = list(tables.items())
+            else:
+                # 新格式：tables是列表
+                tables_list = [(t.get('sheet_name', t.get('table_name')), t) for t in tables]
+            
             sheet_count = 0
             empty_sheets = []
             
             # 遍历schema中定义的每个表
-            for table_name, table_def in tables.items():
-                sheet_display_name = table_def.get('sheet', table_name)
+            for table_key, table_def in tables_list:
+                sheet_display_name = table_def.get('sheet_name', table_def.get('sheet', table_key))
+                table_name = table_def.get('table_name', table_key)
                 columns = table_def.get('columns', [])
                 
                 if not columns:
                     logger.warning(f"跳过表 {table_name}: 没有定义列")
                     continue
                 
-                logger.info(f"处理表: {sheet_display_name} ({len(columns)} 列)")
+                # 获取数据库表名
+                db_table_name = self.TABLE_NAME_MAPPING.get(table_name, table_name)
+                
+                logger.info(f"处理表: {sheet_display_name} -> {db_table_name} ({len(columns)} 列)")
+                
+                # 查询该表的数据
+                try:
+                    with sqlite3.connect(self.db.db_path) as conn:
+                        conn.row_factory = sqlite3.Row
+                        cursor = conn.cursor()
+                        cursor.execute(f"SELECT * FROM {db_table_name}")
+                        records = [dict(row) for row in cursor.fetchall()]
+                except Exception as e:
+                    logger.warning(f"查询表 {db_table_name} 失败: {e}")
+                    records = []
+                
+                if not records and filter_empty_sheets:
+                    empty_sheets.append(sheet_display_name)
+                    logger.info(f"  跳过空表: {sheet_display_name}")
+                    continue
                 
                 # 创建sheet
                 ws = wb.create_sheet(title=sheet_display_name[:31])  # Excel sheet名称限制31字符
                 
                 # 写入表头
-                headers = [col.get('original', col.get('name', '')) for col in columns]
+                headers = [col.get('name', '') for col in columns] if isinstance(columns[0], dict) else columns
                 ws.append(headers)
                 
                 # 写入数据
                 row_count = 0
                 for record in records:
                     row_data = []
-                    has_data = False
                     
                     for column_def in columns:
-                        value = self._extract_field_value(record, column_def)
+                        if isinstance(column_def, dict):
+                            col_name = column_def.get('name', '')
+                        else:
+                            col_name = column_def
                         
-                        # 检查是否有实际数据
-                        if value and value != '' and value != 'null' and value != 'None':
-                            has_data = True
-                        
+                        # 直接从记录中获取值
+                        value = record.get(col_name, '')
                         row_data.append(value if value else '')
                     
-                    # 如果这一行有数据，或者不过滤空行，就添加
-                    if has_data or not filter_empty_sheets:
-                        ws.append(row_data)
-                        row_count += 1
+                    ws.append(row_data)
+                    row_count += 1
                 
                 # 设置样式
                 self._style_header(ws)

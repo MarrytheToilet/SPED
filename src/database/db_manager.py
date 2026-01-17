@@ -247,7 +247,7 @@ class DatabaseManager:
     
     def query_all(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        查询所有记录
+        查询所有记录（从basic_info主表）
         
         Args:
             limit: 限制返回数量
@@ -260,7 +260,7 @@ class DatabaseManager:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 
-                sql = "SELECT * FROM sheet_1 ORDER BY created_at DESC"
+                sql = "SELECT * FROM basic_info ORDER BY created_at DESC"
                 if limit:
                     sql += f" LIMIT {limit}"
                 

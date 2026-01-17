@@ -13,19 +13,19 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "唯一标识符，格式：AJ_YYYYMMDD_随机字符串，用于关联所有表的数据"
         },
         {
           "name": "应用部位",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "人工关节的应用位置，如：髋关节、膝关节、肩关节等"
         },
         {
           "name": "产品所属专利号或文献",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "数据来源，包括DOI、专利号、或引用文献编号（如：引用文献[15]）"
         }
       ],
       "primary_key": "数据ID",
@@ -42,49 +42,49 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "内衬材料类别",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬材料的大类别。常见类别：高分子聚合物（如UHMWPE、XLPE）、陶瓷（如Al₂O₃、ZrO₂）、金属（如CoCrMo、Ti合金）、复合材料（如CFR-PEEK、ZTA）。多个类别用顿号分隔"
         },
         {
           "name": "内衬材料名称",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬材料的规范化名称，必须使用标准命名。高分子类：UHMWPE（超高分子量聚乙烯）、XLPE（交联聚乙烯）、Vit-E diffused XLPE（维生素E扩散交联聚乙烯）、annealed HXLPE（退火高交联聚乙烯）、vitamin E-blended HXLPE（维生素E共混高交联聚乙烯）、CFR-PEEK（碳纤维增强PEEK）。陶瓷类：Al₂O₃陶瓷（氧化铝陶瓷）、ZrO₂陶瓷（氧化锆陶瓷）、ZTA复合材料（需标注成分如95wt% Al₂O₃、5wt% 3YSZ）。多个材料用顿号分隔"
         },
         {
           "name": "内衬厚度(mm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的厚度，必须带单位mm，多个值用顿号分隔，如：4.3 mm、6.3 mm、10.3 mm"
         },
         {
           "name": "内衬偏移(mm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的偏移量，必须带单位mm，如：2 mm、3 mm、4 mm"
         },
         {
           "name": "内衬锁定机制",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的固定方式，如：6个防旋卡扣、螺纹锁定、压配合等"
         },
         {
           "name": "内衬加工工艺",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的制造工艺，如：等静压成型、压缩成型、注塑成型、机械加工等"
         },
         {
           "name": "内衬后处理",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的后处理工艺，必须包含详细的工艺参数（温度、时间、剂量等）。常见工艺：辐照交联（如100 kGy辐照交联、γ射线交联、电子束辐照）、热处理（如在130°C下均质退火24小时、真空环境下110°C保温72小时）、维生素E处理（如维生素E扩散、维生素E浸渍）、机械处理（如机械加工、抛光）。多个工艺用顿号分隔，按工艺顺序排列"
         }
       ],
       "primary_key": "数据ID",
@@ -101,43 +101,43 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "球头材料类别",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头材料的大类，如：金属、陶瓷、复合材料等，多个类别用顿号分隔"
         },
         {
           "name": "球头材料名称",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头材料的规范化名称，使用标准命名。金属类：CoCrMo（钴铬钼合金）、CoCr（钴铬合金）、Ti-6Al-4V（钛合金）、316L（不锈钢）。陶瓷类：ZrO₂陶瓷（氧化锆陶瓷）、Al₂O₃陶瓷（氧化铝陶瓷）、ZTA复合材料（需标注详细成分如95wt% Al₂O₃、5wt% 3YSZ）。对于复合材料，必须标明各成分的重量百分比"
         },
         {
           "name": "球头直径(mm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的直径，必须带单位mm，多个直径用顿号分隔，常见值：22 mm、28 mm、32 mm、36 mm、40 mm"
         },
         {
           "name": "球头纹理",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头表面的纹理特征，如：光滑、镜面抛光、微纹理、粗糙等"
         },
         {
           "name": "球头加工工艺",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的制造工艺，如：锻造、铸造、粉末冶金、烧结、机械加工、增材制造等"
         },
         {
           "name": "球头后处理",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的后处理方法，如：抛光至Ra<50 nm、镜面抛光、电抛光、氮化处理、涂层等"
         }
       ],
       "primary_key": "数据ID",
@@ -154,13 +154,13 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "内衬-球头径向间隙(mm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬与球头之间的配合间隙，必须带单位mm，如：0.05 mm、0.1 mm、0.15 mm、0.025-0.2 mm"
         }
       ],
       "primary_key": "数据ID",
@@ -177,97 +177,97 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "股骨柄材料类别",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄材料的大类，如：金属、陶瓷、复合材料等"
         },
         {
           "name": "股骨柄材料名称",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄材料的规范名称，如：Ti-6Al-4V、CoCrMo、316L不锈钢、钽合金等"
         },
         {
           "name": "锥度(°)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "锥度规格或角度，如：12/14、11/13、V40、5.7°等"
         },
         {
           "name": "锥颈尺寸",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "锥颈尺寸，带单位，如：12 mm × 14 mm、10.5 mm × 12 mm"
         },
         {
           "name": "颈长(mm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "颈长尺寸，必须带单位mm，如：40 mm、50 mm、60 mm"
         },
         {
           "name": "锥套设计",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "锥套类型，如：模块化锥套、一体式、可调节锥套等"
         },
         {
           "name": "锥度间隙(°)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "锥度间隙，带角度单位，如：0.02°、0.05°"
         },
         {
           "name": "股骨柄颈干角(°)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "颈干角度，必须带单位°，如：130°、135°、140°"
         },
         {
           "name": "股骨柄偏心距(mm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "偏心距，必须带单位mm，如：35 mm、40 mm、44 mm"
         },
         {
           "name": "股骨柄拓扑结构",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "结构设计，如：多孔结构、梯度孔隙、实心、蜂窝结构、3D打印多孔等"
         },
         {
           "name": "股骨柄孔隙率(%)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "孔隙率百分比，如：50%、70%、80-90%"
         },
         {
           "name": "股骨柄横截面",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "横截面形状，如：圆形、椭圆形、矩形等"
         },
         {
           "name": "柄体长度H(mm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "柄体长度，必须带单位mm，如：120 mm、150 mm、180 mm"
         },
         {
           "name": "股骨柄加工工艺",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的制造工艺，如：3D打印、增材制造、锻造、机械加工等"
         },
         {
           "name": "股骨柄后处理",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的后处理方法，如：喷砂、阳极氧化、HA涂层、等离子喷涂、表面粗化等"
         }
       ],
       "primary_key": "数据ID",
@@ -284,49 +284,49 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "内衬硬度(HV)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的维氏硬度，必须带单位HV，如：50 HV、65 HV、80 HV"
         },
         {
           "name": "内衬表面粗糙度(μm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的表面粗糙度，必须带单位μm（微米），如：0.05 μm、0.1 μm、Ra 0.1 μm"
         },
         {
           "name": "内衬弹性模量(GPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的弹性模量，必须带单位GPa，如：0.5 GPa、0.676 GPa、0.8 GPa、1.0 GPa"
         },
         {
           "name": "内衬抗压强度(MPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的抗压强度，必须带单位MPa，如：20 MPa、25 MPa、30 MPa"
         },
         {
           "name": "内衬屈服强度(MPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的屈服强度，必须带单位MPa，如：18 MPa、22 MPa、28 MPa"
         },
         {
           "name": "内衬密度(g/cm³)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的密度，必须带单位g/cm³，如：0.93 g/cm³、0.94 g/cm³、0.95 g/cm³"
         },
         {
           "name": "内衬泊松比",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬的泊松比（无量纲），如：0.4、0.425、0.42、0.45"
         }
       ],
       "primary_key": "数据ID",
@@ -343,49 +343,49 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "球头硬度(HV)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的维氏硬度，必须带单位HV，如：400 HV、450 HV、500 HV、600 HV"
         },
         {
           "name": "球头表面粗糙度(nm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的表面粗糙度，必须带单位nm（纳米），如：20 nm、50 nm、100 nm、Ra<50 nm、Ra 16.7±5.8 nm"
         },
         {
           "name": "弹性模量(GPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的弹性模量，必须带单位GPa，如：200 GPa、210 GPa、380 GPa"
         },
         {
           "name": "球头抗压强度(MPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的抗压强度，必须带单位MPa，如：1200 MPa、1500 MPa、2000 MPa"
         },
         {
           "name": "球头屈服强度(MPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的屈服强度，必须带单位MPa，如：800 MPa、900 MPa、1100 MPa"
         },
         {
           "name": "球头密度(g/cm³)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的密度，必须带单位g/cm³，如：8.3 g/cm³、8.5 g/cm³、6.0 g/cm³"
         },
         {
           "name": "球头泊松比",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "球头的泊松比（无量纲），如：0.3、0.31、0.33"
         }
       ],
       "primary_key": "数据ID",
@@ -402,49 +402,49 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "股骨柄硬度(HV)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的维氏硬度，必须带单位HV，如：300 HV、350 HV、400 HV"
         },
         {
           "name": "股骨柄表面粗糙度(μm)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的表面粗糙度，必须带单位μm（微米），如：0.5 μm、1.0 μm、2.0 μm、Ra 1.5 μm"
         },
         {
           "name": "股骨柄弹性模量(GPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的弹性模量，必须带单位GPa，如：100 GPa、110 GPa、200 GPa"
         },
         {
           "name": "股骨柄抗压强度(MPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的抗压强度，必须带单位MPa，如：800 MPa、1000 MPa、1200 MPa"
         },
         {
           "name": "股骨柄屈服强度(MPa)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的屈服强度，必须带单位MPa，如：700 MPa、800 MPa、900 MPa"
         },
         {
           "name": "股骨柄密度(g/cm³)",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的密度，必须带单位g/cm³，如：4.5 g/cm³、4.8 g/cm³、8.3 g/cm³"
         },
         {
           "name": "股骨柄泊松比",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "股骨柄的泊松比（无量纲），如：0.3、0.31、0.34"
         }
       ],
       "primary_key": "数据ID",
@@ -461,43 +461,43 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "内衬相含量变化",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "内衬材料在使用过程中的晶相或结晶度变化，需包含具体数值和变化方向。晶相变化：单斜相、四方相、立方相的增减百分比。结晶度变化：非晶相、中间相、结晶相的含量变化。示例：结晶度从40%降至35%、单斜相增加10%、非晶相增加2.5%、中间相减少2.2%、各相无显著变化。对于多组实验，需标明各组的变化情况"
         },
         {
           "name": "累计磨损量",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "总磨损量，必须带单位，如：15.6 mg、0.5 mm³、11.52±1.12 mg"
         },
         {
           "name": "磨损率",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "磨损速率，必须带单位和统计值。常用单位：mg/Mc（毫克/百万次循环）、mm³/Nm（立方毫米/牛顿米）、mm³/Mc（立方毫米/百万次循环）、mm/年（毫米/年）。格式：平均值±标准差 单位。示例：2.30±0.22 mg/Mc、1.5×10⁻⁶ mm³/Nm、0.5 mm³/Mc、0.12 mm/年。对于多组实验，用顿号分隔并标明对应条件（如：2.30±0.22 mg/Mc (10.3mm)、3.58±0.72 mg/Mc (6.3mm)）"
         },
         {
           "name": "抗疲劳性",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "疲劳性能描述，如：10⁶次循环无失效、疲劳强度500 MPa、疲劳寿命>500万次"
         },
         {
           "name": "接触应力",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "接触应力，必须带单位MPa，可以是范围或单值，如：50 MPa、80 MPa、100 MPa、9.0-15.8 MPa、峰值接触应力 9.0-15.8 MPa"
         },
         {
           "name": "Von Mises应力",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "等效应力，必须带单位MPa，如：85 MPa、120 MPa、150 MPa"
         }
       ],
       "primary_key": "数据ID",
@@ -514,25 +514,25 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "计算建模软件",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "仿真软件名称，如：ABAQUS、ANSYS、COMSOL、Hypermesh、ADAMS、Mathematica等"
         },
         {
           "name": "计算建模输入参数",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "JSON格式的仿真输入参数字符串，包含所有关键建模条件。必须包含单位。常见参数：载荷（N）、边界条件、摩擦系数、材料属性（泊松比、弹性模量GPa、密度g/cm³）、几何参数（球头直径mm、内衬厚度mm、径向间隙mm）、网格参数（网格大小mm、单元类型）、接触设置。示例：{\"载荷\": \"3000 N\", \"泊松比\": \"0.425\", \"弹性模量\": \"676 MPa\", \"球头半径\": \"14 mm\", \"径向间隙\": \"0.025-0.2 mm\", \"网格大小\": \"1 mm\", \"摩擦系数\": \"0.08\"}"
         },
         {
           "name": "计算建模输出参数",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "JSON格式的仿真输出结果字符串，包含所有关键计算结果。必须包含单位。常见输出：应力结果（最大应力MPa、Von Mises应力MPa、峰值接触应力MPa、接触压力MPa）、位移结果（最大位移mm、变形量mm）、磨损预测（磨损深度mm、磨损体积mm³）、接触力学（接触面积mm²、接触压力分布）。示例：{\"峰值接触应力\": \"9.0-15.8 MPa (10.3mm)、9.8-19.1 MPa (6.3mm)、11.1-22.3 MPa (4.3mm)\", \"最大应力\": \"85 MPa\", \"最大位移\": \"0.5 mm\"}"
         }
       ],
       "primary_key": "数据ID",
@@ -549,19 +549,19 @@
           "name": "数据ID",
           "type": "TEXT",
           "nullable": false,
-          "description": ""
+          "description": "外键，关联到基本信息表的数据ID"
         },
         {
           "name": "计算建模模拟结构图",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "图片描述或文件名，如：应力分布云图、位移分布图、接触压力分布、磨损深度云图"
         },
         {
           "name": "计算建模模拟结构图说明",
           "type": "TEXT",
           "nullable": true,
-          "description": ""
+          "description": "图片详细说明，描述模拟结果和关键发现，如：有限元模型显示髋臼内衬最大应力出现在边缘区域，应力值为85 MPa"
         }
       ],
       "primary_key": "数据ID",

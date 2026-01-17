@@ -54,7 +54,7 @@ class ProcessingPipeline:
     def _setup_agents(self):
         """设置Agents"""
         # LLM提取Agent
-        schema_file = SCHEMA_DIR / "inferred_schema.json"
+        schema_file = SCHEMA_DIR / "schema.json"
         llm_agent = LLMExtractionAgent(schema_path=str(schema_file))
         self.orchestrator.register_agent("llm_extraction", llm_agent)
         

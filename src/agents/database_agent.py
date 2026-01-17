@@ -236,7 +236,7 @@ class DatabaseInsertionAgent(BaseAgent):
     def _prepare_sheet1_simplified(self, data: Dict, dataid: str) -> Dict:
         """
         准备sheet_1数据（简化版，TEXT字段存储JSON字符串）
-        严格按照 inferred_schema.json 的 sheet_1 列定义
+        严格按照 schema.json 的 sheet_1 列定义
         """
         import json
         
@@ -249,7 +249,7 @@ class DatabaseInsertionAgent(BaseAgent):
             return json.dumps(value, ensure_ascii=False)
         
         sheet1_data = {
-            "数据id": dataid,  # 对应 inferred_schema 的 name: "数据id"
+            "数据id": dataid,  # 对应 schema.json 的 name: "数据id"
             "数据标识": data.get("数据标识"),
             "应用部位": data.get("应用部位"),
             "产品所属专利号或文献": data.get("产品所属专利号或文献"),

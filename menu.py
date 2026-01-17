@@ -522,37 +522,43 @@ def run_quick_export():
 def run_quick_excel_export():
     """快速导出Excel多表"""
     print(f"\n{BLUE}{'='*80}{END}")
-    print(f"{BLUE}导出Excel多表（按schema组织）{END}")
+    print(f"{BLUE}导出Excel多表（从JSON提取结果）{END}")
     print(f"{BLUE}{'='*80}{END}\n")
     
     import sys
     sys.path.insert(0, str(Path(__file__).parent))
     
-    from src.database.excel_exporter import export_excel_all_tables
+    from src.database.json_to_excel import export_json_to_excel
     from loguru import logger
     
     logger.remove()
     logger.add(sys.stderr, level="INFO")
     
-    print(f"{CYAN}说明: 将按照schema定义的表结构，导出多个sheet的Excel文件{END}")
-    print(f"{CYAN}每个sheet对应schema中的一个表{END}")
+    print(f"{CYAN}说明: 从 data/processed/extracted/ 中读取所有JSON文件{END}")
+    print(f"{CYAN}      按照schema定义组织为多sheet的Excel文件{END}")
     print(f"{BLUE}开始导出...{END}\n")
     
-    success = export_excel_all_tables(Path("data/exports"), filter_empty=True)
+    success = export_json_to_excel(
+        output_dir=Path("data/exports"),
+        extracted_dir=Path("data/processed/extracted"),
+        schema_file=Path("data_schema/schema.json"),
+        filter_empty=True
+    )
     
     if success:
         print(f"\n{GREEN}{'='*80}{END}")
-        print(f"{GREEN}导出完成！{END}")
+        print(f"{GREEN}✅ 导出完成！{END}")
         print(f"{GREEN}{'='*80}{END}\n")
-        print(f"文件保存在: data/exports/")
+        print(f"📁 文件保存在: data/exports/")
         print(f"\n{CYAN}特点：{END}")
+        print(f"  • 📄 直接从JSON提取结果导出，无需数据库")
         print(f"  • 📊 多个sheet，每个对应一个数据表")
         print(f"  • 🎯 按照schema.json定义的结构组织")
         print(f"  • 🗑️  自动过滤没有数据的空表")
         print(f"  • 🎨 表头样式美化，自动调整列宽")
     else:
         print(f"\n{RED}{'='*80}{END}")
-        print(f"{RED}导出失败！请查看日志{END}")
+        print(f"{RED}❌ 导出失败！请查看日志{END}")
         print(f"{RED}{'='*80}{END}")
     
     input(f"\n{GREEN}按回车键返回主菜单...{END}")
@@ -687,15 +693,16 @@ def view_system_status():
         from dotenv import load_dotenv
         load_dotenv()
         
-        api_key = os.getenv("OPENAI_API_KEY")
-        model = os.getenv("OPENAI_MODEL", "gpt-4o")
+        # 检查API key（优先SiliconFlow）
+        api_key = os.getenv("SILICONFLOW_API_KEY") or os.getenv("OPENAI_API_KEY")
+        model = os.getenv("LLM_MODEL", "moonshotai/Kimi-K2-Instruct-0905")
         
         if api_key:
-            print(f"  ✅ OPENAI_API_KEY: 已配置 ({api_key[:10]}...)")
+            print(f"  ✅ API_KEY: 已配置 ({api_key[:10]}...)")
         else:
-            print(f"  ❌ OPENAI_API_KEY: 未配置")
+            print(f"  ❌ API_KEY: 未配置")
         
-        print(f"  ℹ️  OPENAI_MODEL: {model}")
+        print(f"  ℹ️  当前模型: {model}")
     else:
         print(f"  ❌ .env 配置文件不存在")
     

@@ -7,6 +7,8 @@ import json
 import time
 import re
 import hashlib
+import uuid
+import threading
 from typing import Dict, Any, List
 from pathlib import Path
 
@@ -257,11 +259,17 @@ class LLMExtractionAgent(BaseAgent):
         print(f"  API地址: {self.api_base}")
     
     def _generate_dataid(self, paper_id: str) -> str:
-        """生成dataid"""
+        """
+        生成唯一dataid，确保并行处理时不会冲突
+        格式: AJ_YYYYMMDD_hash8_uuid8
+        """
         from datetime import datetime
+        # 使用paper_id的MD5哈希（前8位）
         hash_val = hashlib.md5(paper_id.encode()).hexdigest()[:8]
+        # 添加8位UUID确保并行处理时的唯一性（从4位增加到8位）
+        unique_suffix = str(uuid.uuid4()).replace('-', '')[:8]
         date_str = datetime.now().strftime("%Y%m%d")
-        return f"AJ_{date_str}_{hash_val}"
+        return f"AJ_{date_str}_{hash_val}_{unique_suffix}"
     
     def process(self, input_data: Dict) -> Dict:
         """
