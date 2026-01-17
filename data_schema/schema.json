@@ -1,0 +1,571 @@
+{
+  "schema_version": "2.0",
+  "description": "人工关节材料数据提取 - 规范化多表结构",
+  "tables": [
+    {
+      "sheet_name": "1",
+      "table_name": "基本信息表",
+      "description": "记录的基本标识信息和文献来源",
+      "category": "基本信息",
+      "is_main_table": true,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "应用部位",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "产品所属专利号或文献",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": null
+    },
+    {
+      "sheet_name": "2",
+      "table_name": "内衬基本信息表",
+      "description": "内衬材料的基本属性和加工工艺",
+      "category": "内衬信息",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "内衬材料类别",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬材料名称",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬厚度(mm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬偏移(mm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬锁定机制",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬加工工艺",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬后处理",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "3",
+      "table_name": "球头基本信息表",
+      "description": "球头材料的基本属性和加工工艺",
+      "category": "球头信息",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "球头材料类别",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头材料名称",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头直径(mm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头纹理",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头加工工艺",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头后处理",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "4",
+      "table_name": "配合信息表",
+      "description": "内衬与球头的配合参数",
+      "category": "配合信息",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "内衬-球头径向间隙(mm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "5",
+      "table_name": "股骨柄基本信息表",
+      "description": "股骨柄的几何参数和材料信息",
+      "category": "股骨柄信息",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "股骨柄材料类别",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄材料名称",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "锥度(°)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "锥颈尺寸",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "颈长(mm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "锥套设计",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "锥度间隙(°)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄颈干角(°)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄偏心距(mm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄拓扑结构",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄孔隙率(%)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄横截面",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "柄体长度H(mm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄加工工艺",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄后处理",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "6",
+      "table_name": "内衬物理性能表",
+      "description": "内衬材料的力学和物理性能参数",
+      "category": "内衬信息",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "内衬硬度(HV)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬表面粗糙度(μm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬弹性模量(GPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬抗压强度(MPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬屈服强度(MPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬密度(g/cm³)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "内衬泊松比",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "7",
+      "table_name": "球头物理性能表",
+      "description": "球头材料的力学和物理性能参数",
+      "category": "球头信息",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "球头硬度(HV)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头表面粗糙度(nm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "弹性模量(GPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头抗压强度(MPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头屈服强度(MPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头密度(g/cm³)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "球头泊松比",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "8",
+      "table_name": "股骨柄物理性能表",
+      "description": "股骨柄材料的力学和物理性能参数",
+      "category": "股骨柄信息",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "股骨柄硬度(HV)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄表面粗糙度(μm)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄弹性模量(GPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄抗压强度(MPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄屈服强度(MPa)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄密度(g/cm³)",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "股骨柄泊松比",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "9",
+      "table_name": "性能测试结果表",
+      "description": "摩擦磨损和力学性能测试结果",
+      "category": "实验结果",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "内衬相含量变化",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "累计磨损量",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "磨损率",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "抗疲劳性",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "接触应力",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "Von Mises应力",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "10",
+      "table_name": "计算模拟参数表",
+      "description": "计算模拟的软件和参数设置",
+      "category": "计算模拟",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "计算建模软件",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "计算建模输入参数",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "计算建模输出参数",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    },
+    {
+      "sheet_name": "11",
+      "table_name": "计算模拟图像表",
+      "description": "计算模拟的结构图和说明",
+      "category": "计算模拟",
+      "is_main_table": false,
+      "columns": [
+        {
+          "name": "数据ID",
+          "type": "TEXT",
+          "nullable": false,
+          "description": ""
+        },
+        {
+          "name": "计算建模模拟结构图",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        },
+        {
+          "name": "计算建模模拟结构图说明",
+          "type": "TEXT",
+          "nullable": true,
+          "description": ""
+        }
+      ],
+      "primary_key": "数据ID",
+      "foreign_key": "数据ID"
+    }
+  ]
+}

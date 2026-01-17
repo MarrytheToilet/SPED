@@ -204,7 +204,6 @@ def extract_batch_interactive(mode: str = None, model: str = None, parallel: boo
     # 显示并行配置
     if parallel:
         import multiprocessing
-        import settings
         
         if workers:
             actual_workers = workers
