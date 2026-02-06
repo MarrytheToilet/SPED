@@ -85,7 +85,7 @@ AVAILABLE_MODELS = {
         "api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
     },
     # 硅基流动
-    "Qwen/Qwen3-Next-80B-A3B-Instruct": {
+    "Qwen/Qwen3-235B-A22B-Instruct-2507": {
         "provider": "siliconflow",
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
         "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
@@ -95,12 +95,12 @@ AVAILABLE_MODELS = {
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
         "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
     },
-    "MiniMaxAI/MiniMax-M2": {
+    "Pro/moonshotai/Kimi-K2.5": {
         "provider": "siliconflow",
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
         "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
     },
-    "deepseek-ai/DeepSeek-V2.5": {
+    "Pro/zai-org/GLM-4.7": {
         "provider": "siliconflow",
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
         "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),

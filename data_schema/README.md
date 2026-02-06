@@ -1,121 +1,200 @@
-# Data Schema 说明文档
+# Data Schema 说明文档 v3.0
 
 ## 📋 概述
 
-这是人工关节材料数据提取系统的数据架构，采用**规范化多表结构**设计，具有良好的数据组织性和查询效率。
+这是人工关节材料数据提取系统的数据架构v3.0版本，采用**规范化12表结构**设计，具有良好的数据组织性和查询效率。
 
 ---
 
 ## 🏗️ 数据库架构
 
+### 版本信息
+- **Schema版本**: 3.0
+- **更新日期**: 2026-02-06
+- **表数量**: 12个表
+- **总字段数**: 148个字段
+
 ### ER关系图
 
 ```
-┌─────────────────┐
-│  basic_info     │ ◄─────┐
-│  (主表)         │       │
-│  - data_id (PK) │       │
-│  - 应用部位      │       │
-│  - 文献来源      │       │
-└─────────────────┘       │
-                          │ 1:1
-    ┌─────────────────────┼─────────────────────┐
-    │                     │                     │
-    ▼                     ▼                     ▼
-┌──────────┐      ┌──────────┐      ┌──────────┐
-│liner_    │      │head_     │      │stem_     │
-│basic     │      │basic     │      │basic     │
-│(内衬基本) │      │(球头基本) │      │(股骨柄基本)│
-└──────────┘      └──────────┘      └──────────┘
+┌─────────────────────────┐
+│  Sheet1_基本信息表      │ ◄────┐ (主表)
+│  - 数据ID (PK)          │      │
+│  - 应用部位             │      │
+│  - 论文标题             │      │
+│  - 论文DOI号            │      │
+└─────────────────────────┘      │ 1:1
+                                 │
+     ┌───────────────────────────┼───────────────────────┐
+     │                           │                       │
+     ▼                           ▼                       ▼
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│Sheet2_内衬  │         │Sheet3_球头  │         │Sheet5_股骨柄│
+│基本信息表   │         │基本信息表   │         │基本信息表   │
+└─────────────┘         └─────────────┘         └─────────────┘
+     │                       │                       │
+     ▼                       ▼                       ▼
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│Sheet6_内衬  │         │Sheet7_球头  │         │Sheet8_股骨柄│
+│物理性能表   │         │物理性能表   │         │物理性能表   │
+└─────────────┘         └─────────────┘         └─────────────┘
 
-    ▼                     ▼                     ▼
-┌──────────┐      ┌──────────┐      ┌──────────┐
-│liner_    │      │head_     │      │stem_     │
-│properties│      │properties│      │properties│
-│(内衬性能) │      │(球头性能) │      │(股骨柄性能)│
-└──────────┘      └──────────┘      └──────────┘
-
-    ┌─────────────┬─────────────┬─────────────┐
-    ▼             ▼             ▼             ▼
-┌──────────┐┌──────────┐┌──────────┐┌──────────┐
-│fitting_  ││test_     ││simulation││simulation│
-│info      ││results   ││_params   ││_images   │
-│(配合信息) ││(测试结果) ││(模拟参数) ││(模拟图像) │
-└──────────┘└──────────┘└──────────┘└──────────┘
+     ┌─────────────┬─────────────┬─────────────┬─────────────┐
+     │             │             │             │             │
+     ▼             ▼             ▼             ▼             ▼
+┌──────────┐┌──────────┐┌──────────┐┌──────────┐┌──────────┐
+│Sheet4_配 ││Sheet9_实 ││Sheet10_性││Sheet11_计││Sheet12_计│
+│合信息表  ││验参数    ││能测试结果││算模拟参数││算模拟图像│
+└──────────┘└──────────┘└──────────┘└──────────┘└──────────┘
 ```
 
 ---
 
 ## 📊 表结构详细说明
 
-### 1. basic_info (基本信息表) - 主表
+### 1. Sheet1_基本信息表 (basic_info) - 主表
 
 **用途**: 记录的基本标识和文献来源
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| data_id | TEXT | PRIMARY KEY | 唯一标识符，格式：AJ_YYYYMMDD_xxx |
-| application_site | TEXT | - | 应用部位（髋关节、膝关节等） |
-| patent_or_literature | TEXT | - | 专利号或文献DOI |
-| created_at | TIMESTAMP | DEFAULT NOW | 创建时间 |
-| updated_at | TIMESTAMP | DEFAULT NOW | 更新时间 |
+| 数据ID | TEXT | PRIMARY KEY | 唯一标识符，格式：AJ_YYYYMMDD_xxx |
+| 应用部位 | TEXT | - | 应用部位（髋关节、膝关节等） |
+| 产品所属专利号或文献 | TEXT | - | 专利号或文献DOI |
+| 来源文件 | TEXT | - | 论文文件名 |
+| 论文标题 | TEXT | - | 论文完整标题 |
+| 论文DOI号 | TEXT | - | 论文DOI编号 |
+| 论文ID | TEXT | - | 论文唯一标识 |
 
-**索引**: `idx_basic_info_site` on `application_site`
+**字段数**: 7
 
 ---
 
-### 2. liner_basic (内衬基本信息表)
+### 2. Sheet2_内衬基本信息表 (liner_basic)
 
 **用途**: 内衬材料的基本属性和加工工艺
 
-关键字段：材料类别、材料名称、厚度、偏移、锁定机制、加工工艺、后处理
+**关键字段**: 
+- 材料类别、材料名称、成型方式
+- 碳纤维/碳纳米管/石墨烯/碳化硅相关参数
+- 内衬厚度、偏移、锁定机制
+- 加工工艺、后处理
+
+**字段数**: 24
 
 ---
 
-### 3. head_basic (球头基本信息表)
+### 3. Sheet3_球头基本信息表 (head_basic)
 
-**用途**: 球头材料的基本属性和加工工艺
+**用途**: 球头材料的基本属性和微观结构
 
-关键字段：材料类别、材料名称、直径、纹理、加工工艺、后处理
+**关键字段**:
+- 材料类别、材料名称、合金成分
+- 球头直径、纹理
+- 加工工艺、后处理
+- 晶粒尺寸、晶粒取向、相组成
+- 碳化物相关参数
+
+**字段数**: 16
 
 ---
 
-### 4. fitting_info (配合信息表)
+### 4. Sheet4_配合信息表 (fitting_info)
 
 **用途**: 内衬与球头的配合参数
 
-关键字段：径向间隙
+**关键字段**:
+- 内衬-球头径向间隙
+
+**字段数**: 4
 
 ---
 
-### 5. stem_basic (股骨柄基本信息表)
+### 5. Sheet5_股骨柄基本信息表 (stem_basic)
 
-**用途**: 股骨柄的几何参数和材料信息（16个字段）
+**用途**: 股骨柄的几何参数和材料信息
 
-关键字段：材料类别、材料名称、锥度、颈长、偏心距、孔隙率、加工工艺等
+**关键字段**:
+- 材料类别、材料名称
+- 锥度、锥颈尺寸、颈长
+- 锥套设计、锥度间隙
+- 颈干角、偏心距
+- 拓扑结构、孔隙率、横截面
+- 柄体长度、加工工艺、后处理
+
+**字段数**: 18
 
 ---
 
 ### 6-8. 物理性能表
 
-- **liner_properties**: 内衬物理性能（硬度、粗糙度、模量、强度、密度、泊松比）
-- **head_properties**: 球头物理性能（同上，注意粗糙度单位是nm）
-- **stem_properties**: 股骨柄物理性能（同上）
+#### Sheet6_内衬物理性能表 (liner_properties)
+**字段数**: 15
+**关键字段**: 硬度、表面粗糙度、弹性模量、各种强度、密度、泊松比
+
+#### Sheet7_球头物理性能表 (head_properties)
+**字段数**: 11
+**关键字段**: 硬度、表面粗糙度(nm)、弹性模量、强度、密度、泊松比
+
+#### Sheet8_股骨柄物理性能表 (stem_properties)
+**字段数**: 10
+**关键字段**: 硬度、表面粗糙度、弹性模量、强度、密度、泊松比
 
 ---
 
-### 9. test_results (性能测试结果表)
+### 9. Sheet9_实验参数 (experiment_params)
 
-**用途**: 摩擦磨损和力学性能测试结果
+**用途**: 摩擦磨损实验的测试条件
 
-关键字段：相含量变化、累计磨损量、磨损率、抗疲劳性、接触应力、Von Mises应力
+**关键字段**:
+- 实验器材、滑动距离、频率、摩擦时间
+- 载荷、实验温度
+- 润滑液类型、蛋白质浓度、润滑液pH
+- 接触载荷、运动模式、速率、接触方式
+
+**字段数**: 16
 
 ---
 
-### 10-11. 计算模拟表
+### 10. Sheet10_性能测试结果表 (test_results)
 
-- **simulation_params**: 软件、输入参数(JSON)、输出参数(JSON)
-- **simulation_images**: 结构图、图说明
+**用途**: 实验测试结果
+
+**关键字段**:
+- 内衬相含量变化
+- 累计磨损量、磨损率、摩擦系数
+- 腐蚀速率、离子释放量
+- 磨损颗粒大小、磨损颗粒形貌
+- 摩擦膜组成、摩擦膜厚度
+- 抗疲劳性
+- 接触应力、Von Mises应力
+
+**字段数**: 16
+
+---
+
+### 11. Sheet11_计算模拟参数表 (simulation_params)
+
+**用途**: 计算模拟的输入输出参数
+
+**关键字段**:
+- 计算建模软件
+- 计算建模输入参数
+- 计算建模输出参数
+
+**字段数**: 6
+
+---
+
+### 12. Sheet12_计算模拟图像表 (simulation_images)
+
+**用途**: 计算模拟的结构图和说明
+
+**关键字段**:
+- 计算建模模拟结构图
+- 计算建模模拟结构图说明
+
+**字段数**: 5
 
 ---
 
@@ -125,16 +204,18 @@
 
 ```
 data_schema/
-├── schema.xlsx                    # Excel格式schema（手工维护）
+├── schema.xlsx                    # Excel格式schema（源文件）
+├── schema.json                    # JSON格式schema（程序使用）
 ├── schema_mapping.json            # 字段映射和说明
 ├── schema.sql                     # SQL建表语句
 └── README.md                      # 本说明文档
 
 prompts/
-└── prompt.md                      # LLM提取指令
+└── prompt.md                      # LLM提取指令（已更新）
 
-scripts/
-└── import_json.py                 # 数据导入工具
+src/database/
+├── db_manager.py                  # 数据库管理器（已更新）
+└── excel_exporter.py              # Excel导出器（已更新）
 ```
 
 ---
@@ -150,10 +231,11 @@ scripts/
 {
   "records": [
     {
-      "基本信息表": {...},
-      "内衬基本信息表": {...},
-      "球头基本信息表": {...},
-      ...其他表
+      "Sheet1_基本信息表": {...},
+      "Sheet2_内衬基本信息表": {...},
+      "Sheet3_球头基本信息表": {...},
+      "Sheet4_配合信息表": null,
+      ...
     }
   ]
 }
@@ -162,33 +244,43 @@ scripts/
 ### 2. 数据库导入
 
 ```bash
-# 导入单个文件
-python scripts/import_json.py data/processed/extracted/paper1.json
+# 使用菜单导入
+python menu.py
+# 选择：6 - 批量导入JSON到数据库
 
-# 导入整个目录
-python scripts/import_json.py data/processed/extracted/
+# 或使用脚本
+python scripts/database.py
 ```
 
 ### 3. 数据查询
 
-**使用视图**（推荐）:
+**查询单表**:
 ```sql
--- 使用预定义的完整数据视图
-SELECT * FROM full_data_view WHERE application_site = '髋关节';
+SELECT * FROM basic_info WHERE 应用部位 = '髋关节';
 ```
 
 **多表JOIN**:
 ```sql
 SELECT 
-    bi.application_site,
-    lb.material_name as liner_material,
-    hb.material_name as head_material,
-    tr.wear_rate
+    bi.应用部位,
+    bi.论文标题,
+    lb.内衬材料名称,
+    hb.球头材料名称,
+    tr.磨损率
 FROM basic_info bi
-LEFT JOIN liner_basic lb ON bi.data_id = lb.data_id
-LEFT JOIN head_basic hb ON bi.data_id = hb.data_id
-LEFT JOIN test_results tr ON bi.data_id = tr.data_id
-WHERE bi.application_site = '髋关节';
+LEFT JOIN liner_basic lb ON bi.数据ID = lb.数据ID
+LEFT JOIN head_basic hb ON bi.数据ID = hb.数据ID
+LEFT JOIN test_results tr ON bi.数据ID = tr.数据ID
+WHERE bi.应用部位 = '髋关节';
+```
+
+### 4. Excel导出
+
+```bash
+python menu.py
+# 选择：9 - 导出Excel多表
+
+# 输出：data/exports/artificial_joint_data_YYYYMMDD_HHMMSS.xlsx
 ```
 
 ---
@@ -196,42 +288,89 @@ WHERE bi.application_site = '髋关节';
 ## 🎯 核心特性
 
 ### 1. 规范化设计
-- **1个主表** + **10个从表**
-- 通过 `data_id` 外键关联
+- **1个主表** + **11个从表**
+- 通过 `数据ID` 外键关联
 - 减少数据冗余，提高查询效率
 
 ### 2. 清晰的表分类
 
 | 分类 | 表 | 数量 |
 |------|---|------|
-| **基本信息** | basic_info | 1 |
-| **内衬** | liner_basic, liner_properties | 2 |
-| **球头** | head_basic, head_properties | 2 |
-| **股骨柄** | stem_basic, stem_properties | 2 |
-| **配合** | fitting_info | 1 |
-| **测试** | test_results | 1 |
-| **模拟** | simulation_params, simulation_images | 2 |
+| **基本信息** | Sheet1 | 1 |
+| **内衬** | Sheet2, Sheet6 | 2 |
+| **球头** | Sheet3, Sheet7 | 2 |
+| **股骨柄** | Sheet5, Sheet8 | 2 |
+| **配合** | Sheet4 | 1 |
+| **实验** | Sheet9, Sheet10 | 2 |
+| **模拟** | Sheet11, Sheet12 | 2 |
 
 ### 3. 完整的字段定义
-- 每个字段都有明确的类型、说明、示例
+- 每个字段都有明确的类型、说明
 - 单位规范（mm、GPa、HV等）
 - NULL值处理规则
 
-### 4. 优化的查询
-- 索引优化（应用部位、材料名称）
-- 预定义视图 `full_data_view`
-- 支持复杂JOIN查询
+### 4. 新增字段
+相比v2.0，新增了：
+- 论文标题、论文DOI号、论文ID
+- 来源文件（每个表都有）
+- 碳纤维、碳纳米管、石墨烯、碳化硅等填料参数
+- 球头晶粒、碳化物等微观结构参数
+- 实验参数独立成表
 
 ---
 
-## 📚 参考资料
+## 📚 使用示例
 
-- **Excel Schema**: `data_schema/schema.xlsx` - 权威数据源
-- **SQL Schema**: `data_schema/schema.sql` - 数据库定义
-- **Field Mapping**: `data_schema/schema_mapping.json` - 字段映射
-- **Extraction Prompt**: `prompts/prompt.md` - LLM提取指令
+### 导入JSON数据
+
+```python
+from src.database.db_manager import DatabaseManager
+
+db = DatabaseManager()
+
+record = {
+    "Sheet1_基本信息表": {
+        "数据ID": "AJ_20260206_001",
+        "应用部位": "髋关节",
+        "论文标题": "...",
+        ...
+    },
+    "Sheet2_内衬基本信息表": {...},
+    ...
+}
+
+db.insert_record(record)
+```
+
+### 导出Excel
+
+```python
+from src.database.excel_exporter import export_to_excel
+
+output_file = export_to_excel(filter_empty=True)
+print(f"导出成功: {output_file}")
+```
+
+---
+
+## 🔧 维护说明
+
+### Schema更新流程
+1. 修改 `schema.xlsx`（源文件）
+2. 生成 `schema.json`
+3. 更新 `prompts/prompt.md`
+4. 更新 `src/database/db_manager.py`
+5. 更新 `src/database/excel_exporter.py`
+6. 测试完整流程
+
+### 数据迁移
+如需从v2.0迁移到v3.0：
+1. 导出v2.0数据为JSON
+2. 编写转换脚本
+3. 导入到v3.0数据库
 
 ---
 
 **维护者**: SPED Team  
-**最后更新**: 2026-01-17
+**最后更新**: 2026-02-06  
+**Schema版本**: 3.0

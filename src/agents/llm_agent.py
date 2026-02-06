@@ -369,8 +369,17 @@ class LLMExtractionAgent(BaseAgent):
         self.log_info(f"  最终记录数: {len(all_records)}")
         self.log_info(f"{'='*80}")
         
-        # 添加元数据
-        for record in all_records:
+        # 替换所有记录中的 ${DATA_ID} 占位符并添加元数据
+        for idx, record in enumerate(all_records):
+            # 替换占位符
+            if 'data' in record:
+                record['data'] = self._replace_dataid_placeholder(record['data'], dataid)
+            else:
+                # 如果是旧格式（没有action/data包装），直接替换整个record
+                all_records[idx] = self._replace_dataid_placeholder(record, dataid)
+                record = all_records[idx]
+            
+            # 添加元数据
             if 'dataid' not in record or not record['dataid']:
                 record['dataid'] = dataid
             if 'paper_id' not in record:
@@ -467,8 +476,15 @@ class LLMExtractionAgent(BaseAgent):
             self.log_info(f"  提取记录数: {len(records)}")
             self.log_info(f"{'='*80}")
             
-            # 添加元数据
+            # 添加元数据并替换占位符
             for record in records:
+                # 替换所有 ${DATA_ID} 占位符为实际的dataid
+                if 'data' in record:
+                    record['data'] = self._replace_dataid_placeholder(record['data'], dataid)
+                else:
+                    record = self._replace_dataid_placeholder(record, dataid)
+                
+                # 确保顶层字段存在
                 if 'dataid' not in record or not record['dataid']:
                     record['dataid'] = dataid
                 if 'paper_id' not in record:
@@ -678,6 +694,32 @@ class LLMExtractionAgent(BaseAgent):
             else:
                 processed.append({"action": "new", "data": rec})
         return processed
+    
+    def _replace_dataid_placeholder(self, data: Dict, actual_dataid: str) -> Dict:
+        """
+        递归替换所有 ${DATA_ID} 占位符为实际的dataid
+        
+        Args:
+            data: 数据字典或列表
+            actual_dataid: 实际的dataid值
+        
+        Returns:
+            替换后的数据
+        """
+        if isinstance(data, dict):
+            result = {}
+            for key, value in data.items():
+                if isinstance(value, str) and value == "${DATA_ID}":
+                    result[key] = actual_dataid
+                elif isinstance(value, (dict, list)):
+                    result[key] = self._replace_dataid_placeholder(value, actual_dataid)
+                else:
+                    result[key] = value
+            return result
+        elif isinstance(data, list):
+            return [self._replace_dataid_placeholder(item, actual_dataid) for item in data]
+        else:
+            return data
     
     def _merge_records(self, existing: List[Dict], new_records: List[Dict]) -> List[Dict]:
         """

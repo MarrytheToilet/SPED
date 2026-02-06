@@ -1,298 +1,281 @@
--- ================================================================================
--- 人工关节材料数据库 Schema v2.0
--- 规范化多表结构
--- 生成日期: 2026-01-17
--- ================================================================================
+-- 人工关节材料数据库 Schema
+-- 生成时间: 2026-02-06
+-- Schema版本: 3.0
 
--- ============================================================
--- 表1: 基本信息表 (主表)
--- 用途: 记录的基本标识信息和文献来源
--- ============================================================
+-- Sheet1_基本信息表
 CREATE TABLE IF NOT EXISTS basic_info (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 数据ID，唯一标识符
-    application_site TEXT,               -- 应用部位（髋关节、膝关节等）
-    patent_or_literature TEXT,           -- 产品所属专利号或文献
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    '数据ID' TEXT PRIMARY KEY NOT NULL,
+    '应用部位' TEXT,
+    '产品所属专利号或文献' TEXT,
+    '来源文件' TEXT,
+    '论文标题' TEXT,
+    '论文DOI号' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_basic_info_site ON basic_info(application_site);
+CREATE INDEX IF NOT EXISTS idx_basic_info_application ON basic_info(应用部位);
+CREATE INDEX IF NOT EXISTS idx_basic_info_dataid ON basic_info(数据ID);
 
--- ============================================================
--- 表2: 内衬基本信息表
--- 用途: 内衬材料的基本属性和加工工艺
--- ============================================================
+-- Sheet2_内衬基本信息表
 CREATE TABLE IF NOT EXISTS liner_basic (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    material_category TEXT,              -- 内衬材料类别
-    material_name TEXT,                  -- 内衬材料名称
-    thickness_mm TEXT,                   -- 内衬厚度(mm)
-    offset_mm TEXT,                      -- 内衬偏移(mm)
-    locking_mechanism TEXT,              -- 内衬锁定机制
-    processing_technology TEXT,          -- 内衬加工工艺
-    post_treatment TEXT,                 -- 内衬后处理
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '内衬材料类别' TEXT,
+    '内衬材料名称' TEXT,
+    '成型方式' TEXT,
+    '熔融温度' TEXT,
+    '成型压力' TEXT,
+    '保温时间' TEXT,
+    '碳纤维质量分数' TEXT,
+    '碳纤维长度' TEXT,
+    '碳纤维外径' TEXT,
+    '碳纳米管质量分数' TEXT,
+    '碳纳米管长度' TEXT,
+    '碳纳米管外径' TEXT,
+    '石墨烯质量分数' TEXT,
+    '石墨烯厚度' TEXT,
+    '石墨烯长度' TEXT,
+    '碳化硅质量分数' TEXT,
+    '内衬厚度(mm)' TEXT,
+    '内衬偏移(mm)' TEXT,
+    '内衬锁定机制' TEXT,
+    '内衬加工工艺' TEXT,
+    '内衬后处理' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表3: 球头基本信息表
--- 用途: 球头材料的基本属性和加工工艺
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_liner_basic_dataid ON liner_basic(数据ID);
+
+-- Sheet3_球头基本信息表
 CREATE TABLE IF NOT EXISTS head_basic (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    material_category TEXT,              -- 球头材料类别
-    material_name TEXT,                  -- 球头材料名称
-    diameter_mm TEXT,                    -- 球头直径(mm)
-    texture TEXT,                        -- 球头纹理
-    processing_technology TEXT,          -- 球头加工工艺
-    post_treatment TEXT,                 -- 球头后处理
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '球头材料类别' TEXT,
+    '球头材料名称' TEXT,
+    '球头合金成分' TEXT,
+    '球头直径(mm)' TEXT,
+    '球头纹理' TEXT,
+    '球头加工工艺' TEXT,
+    '球头后处理' TEXT,
+    '球头晶粒尺寸' TEXT,
+    '球头晶粒取向' TEXT,
+    '球头相组成' TEXT,
+    '碳化物尺寸' TEXT,
+    '碳化物分布位置' TEXT,
+    '碳化物连续性' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表4: 配合信息表
--- 用途: 内衬与球头的配合参数
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_head_basic_dataid ON head_basic(数据ID);
+
+-- Sheet4_配合信息表
 CREATE TABLE IF NOT EXISTS fitting_info (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    radial_clearance_mm TEXT,            -- 内衬-球头径向间隙(mm)
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '内衬-球头径向间隙(mm)' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表5: 股骨柄基本信息表
--- 用途: 股骨柄的几何参数和材料信息
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_fitting_info_dataid ON fitting_info(数据ID);
+
+-- Sheet5_股骨柄基本信息表
 CREATE TABLE IF NOT EXISTS stem_basic (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    material_category TEXT,              -- 股骨柄材料类别
-    material_name TEXT,                  -- 股骨柄材料名称
-    taper_degree TEXT,                   -- 锥度(°)
-    taper_size TEXT,                     -- 锥颈尺寸
-    neck_length_mm TEXT,                 -- 颈长(mm)
-    sleeve_design TEXT,                  -- 锥套设计
-    taper_clearance_degree TEXT,         -- 锥度间隙(°)
-    neck_shaft_angle_degree TEXT,        -- 股骨柄颈干角(°)
-    offset_mm TEXT,                      -- 股骨柄偏心距(mm)
-    topology_structure TEXT,             -- 股骨柄拓扑结构
-    porosity_percent TEXT,               -- 股骨柄孔隙率(%)
-    cross_section TEXT,                  -- 股骨柄横截面
-    body_length_mm TEXT,                 -- 柄体长度H(mm)
-    processing_technology TEXT,          -- 股骨柄加工工艺
-    post_treatment TEXT,                 -- 股骨柄后处理
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '股骨柄材料类别' TEXT,
+    '股骨柄材料名称' TEXT,
+    '锥度(°)' TEXT,
+    '锥颈尺寸' TEXT,
+    '颈长(mm)' TEXT,
+    '锥套设计' TEXT,
+    '锥度间隙(°)' TEXT,
+    '股骨柄颈干角(°)' TEXT,
+    '股骨柄偏心距(mm)' TEXT,
+    '股骨柄拓扑结构' TEXT,
+    '股骨柄孔隙率(%)' TEXT,
+    '股骨柄横截面' TEXT,
+    '柄体长度H(mm)' TEXT,
+    '股骨柄加工工艺' TEXT,
+    '股骨柄后处理' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表6: 内衬物理性能表
--- 用途: 内衬材料的力学和物理性能参数
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_stem_basic_dataid ON stem_basic(数据ID);
+
+-- Sheet6_内衬物理性能表
 CREATE TABLE IF NOT EXISTS liner_properties (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    hardness_hv TEXT,                    -- 内衬硬度(HV)
-    surface_roughness_um TEXT,           -- 内衬表面粗糙度(μm)
-    elastic_modulus_gpa TEXT,            -- 内衬弹性模量(GPa)
-    compressive_strength_mpa TEXT,       -- 内衬抗压强度(MPa)
-    yield_strength_mpa TEXT,             -- 内衬屈服强度(MPa)
-    density_g_cm3 TEXT,                  -- 内衬密度(g/cm³)
-    poisson_ratio TEXT,                  -- 内衬泊松比
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '内衬硬度(HV)' TEXT,
+    '内衬表面粗糙度(μm)' TEXT,
+    '内衬弹性模量(GPa)' TEXT,
+    '内衬杨氏模量' TEXT,
+    '内衬极限拉伸强度' TEXT,
+    '内衬弯曲强度' TEXT,
+    '内衬剪切强度' TEXT,
+    '内衬断裂韧性' TEXT,
+    '内衬抗压强度(MPa)' TEXT,
+    '内衬屈服强度(MPa)' TEXT,
+    '内衬密度(g/cm³)' TEXT,
+    '内衬泊松比' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表7: 球头物理性能表
--- 用途: 球头材料的力学和物理性能参数
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_liner_properties_dataid ON liner_properties(数据ID);
+
+-- Sheet7_球头物理性能表
 CREATE TABLE IF NOT EXISTS head_properties (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    hardness_hv TEXT,                    -- 球头硬度(HV)
-    surface_roughness_nm TEXT,           -- 球头表面粗糙度(nm)
-    elastic_modulus_gpa TEXT,            -- 弹性模量(GPa)
-    compressive_strength_mpa TEXT,       -- 球头抗压强度(MPa)
-    yield_strength_mpa TEXT,             -- 球头屈服强度(MPa)
-    density_g_cm3 TEXT,                  -- 球头密度(g/cm³)
-    poisson_ratio TEXT,                  -- 球头泊松比
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '球头硬度(HV)' TEXT,
+    '球头表面粗糙度(nm)' TEXT,
+    '弹性模量(GPa)' TEXT,
+    '球头抗压强度(MPa)' TEXT,
+    '球头屈服强度(MPa)' TEXT,
+    '球头断裂伸长率' TEXT,
+    '球头密度(g/cm³)' TEXT,
+    '球头泊松比' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表8: 股骨柄物理性能表
--- 用途: 股骨柄材料的力学和物理性能参数
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_head_properties_dataid ON head_properties(数据ID);
+
+-- Sheet8_股骨柄物理性能表
 CREATE TABLE IF NOT EXISTS stem_properties (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    hardness_hv TEXT,                    -- 股骨柄硬度(HV)
-    surface_roughness_um TEXT,           -- 股骨柄表面粗糙度(μm)
-    elastic_modulus_gpa TEXT,            -- 股骨柄弹性模量(GPa)
-    compressive_strength_mpa TEXT,       -- 股骨柄抗压强度(MPa)
-    yield_strength_mpa TEXT,             -- 股骨柄屈服强度(MPa)
-    density_g_cm3 TEXT,                  -- 股骨柄密度(g/cm³)
-    poisson_ratio TEXT,                  -- 股骨柄泊松比
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '股骨柄硬度(HV)' TEXT,
+    '股骨柄表面粗糙度(μm)' TEXT,
+    '股骨柄弹性模量(GPa)' TEXT,
+    '股骨柄抗压强度(MPa)' TEXT,
+    '股骨柄屈服强度(MPa)' TEXT,
+    '股骨柄密度(g/cm³)' TEXT,
+    '股骨柄泊松比' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表9: 性能测试结果表
--- 用途: 摩擦磨损和力学性能测试结果
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_stem_properties_dataid ON stem_properties(数据ID);
+
+-- Sheet9_实验参数
+CREATE TABLE IF NOT EXISTS experiment_params (
+    '数据ID' TEXT NOT NULL,
+    '实验器材' TEXT,
+    '滑动距离' TEXT,
+    '频率' TEXT,
+    '摩擦时间' TEXT,
+    '载荷' TEXT,
+    '实验温度' TEXT,
+    '润滑液类型' TEXT,
+    '蛋白质浓度' TEXT,
+    '润滑液pH' TEXT,
+    '接触载荷' TEXT,
+    '运动模式' TEXT,
+    '速率' TEXT,
+    '接触方式' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_experiment_params_dataid ON experiment_params(数据ID);
+
+-- Sheet10_性能测试结果表
 CREATE TABLE IF NOT EXISTS test_results (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    phase_content_change TEXT,           -- 内衬相含量变化
-    cumulative_wear TEXT,                -- 累计磨损量
-    wear_rate TEXT,                      -- 磨损率
-    fatigue_resistance TEXT,             -- 抗疲劳性
-    contact_stress TEXT,                 -- 接触应力
-    von_mises_stress TEXT,               -- Von Mises应力
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '内衬相含量变化' TEXT,
+    '累计磨损量' TEXT,
+    '磨损率' TEXT,
+    '摩擦系数' TEXT,
+    '腐蚀速率' TEXT,
+    '离子释放量' TEXT,
+    '磨损颗粒大小' TEXT,
+    '磨损颗粒形貌' TEXT,
+    '摩擦膜组成' TEXT,
+    '摩擦膜厚度' TEXT,
+    '抗疲劳性' TEXT,
+    '接触应力' TEXT,
+    'Von Mises应力' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表10: 计算模拟参数表
--- 用途: 计算模拟的软件和参数设置
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_test_results_dataid ON test_results(数据ID);
+
+-- Sheet11_计算模拟参数表
 CREATE TABLE IF NOT EXISTS simulation_params (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    software TEXT,                       -- 计算建模软件
-    input_params TEXT,                   -- 计算建模输入参数(JSON)
-    output_params TEXT,                  -- 计算建模输出参数(JSON)
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '计算建模软件' TEXT,
+    '计算建模输入参数' TEXT,
+    '计算建模输出参数' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 表11: 计算模拟图像表
--- 用途: 计算模拟的结构图和说明
--- ============================================================
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
+
+CREATE INDEX IF NOT EXISTS idx_simulation_params_dataid ON simulation_params(数据ID);
+
+-- Sheet12_计算模拟图像表
 CREATE TABLE IF NOT EXISTS simulation_images (
-    data_id TEXT PRIMARY KEY NOT NULL,  -- 外键，关联basic_info
-    structure_diagram TEXT,              -- 计算建模模拟结构图
-    diagram_description TEXT,            -- 计算建模模拟结构图说明
-    FOREIGN KEY (data_id) REFERENCES basic_info(data_id) ON DELETE CASCADE
+    '数据ID' TEXT NOT NULL,
+    '计算建模模拟结构图' TEXT,
+    '计算建模模拟结构图说明' TEXT,
+    '来源文件' TEXT,
+    '论文ID' TEXT,
+    'created_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    'updated_at' TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ============================================================
--- 创建视图：完整数据视图
--- ============================================================
-CREATE VIEW IF NOT EXISTS full_data_view AS
-SELECT 
-    bi.data_id,
-    bi.application_site,
-    bi.patent_or_literature,
-    
-    -- 内衬基本信息
-    lb.material_category as liner_material_category,
-    lb.material_name as liner_material_name,
-    lb.thickness_mm as liner_thickness_mm,
-    lb.offset_mm as liner_offset_mm,
-    lb.locking_mechanism as liner_locking_mechanism,
-    lb.processing_technology as liner_processing_technology,
-    lb.post_treatment as liner_post_treatment,
-    
-    -- 球头基本信息
-    hb.material_category as head_material_category,
-    hb.material_name as head_material_name,
-    hb.diameter_mm as head_diameter_mm,
-    hb.texture as head_texture,
-    hb.processing_technology as head_processing_technology,
-    hb.post_treatment as head_post_treatment,
-    
-    -- 配合信息
-    fi.radial_clearance_mm,
-    
-    -- 股骨柄基本信息
-    sb.material_category as stem_material_category,
-    sb.material_name as stem_material_name,
-    sb.taper_degree,
-    sb.taper_size,
-    sb.neck_length_mm,
-    sb.sleeve_design,
-    sb.taper_clearance_degree,
-    sb.neck_shaft_angle_degree,
-    sb.offset_mm as stem_offset_mm,
-    sb.topology_structure,
-    sb.porosity_percent,
-    sb.cross_section,
-    sb.body_length_mm,
-    sb.processing_technology as stem_processing_technology,
-    sb.post_treatment as stem_post_treatment,
-    
-    -- 内衬物理性能
-    lp.hardness_hv as liner_hardness_hv,
-    lp.surface_roughness_um as liner_surface_roughness_um,
-    lp.elastic_modulus_gpa as liner_elastic_modulus_gpa,
-    lp.compressive_strength_mpa as liner_compressive_strength_mpa,
-    lp.yield_strength_mpa as liner_yield_strength_mpa,
-    lp.density_g_cm3 as liner_density_g_cm3,
-    lp.poisson_ratio as liner_poisson_ratio,
-    
-    -- 球头物理性能
-    hp.hardness_hv as head_hardness_hv,
-    hp.surface_roughness_nm as head_surface_roughness_nm,
-    hp.elastic_modulus_gpa as head_elastic_modulus_gpa,
-    hp.compressive_strength_mpa as head_compressive_strength_mpa,
-    hp.yield_strength_mpa as head_yield_strength_mpa,
-    hp.density_g_cm3 as head_density_g_cm3,
-    hp.poisson_ratio as head_poisson_ratio,
-    
-    -- 股骨柄物理性能
-    sp.hardness_hv as stem_hardness_hv,
-    sp.surface_roughness_um as stem_surface_roughness_um,
-    sp.elastic_modulus_gpa as stem_elastic_modulus_gpa,
-    sp.compressive_strength_mpa as stem_compressive_strength_mpa,
-    sp.yield_strength_mpa as stem_yield_strength_mpa,
-    sp.density_g_cm3 as stem_density_g_cm3,
-    sp.poisson_ratio as stem_poisson_ratio,
-    
-    -- 测试结果
-    tr.phase_content_change,
-    tr.cumulative_wear,
-    tr.wear_rate,
-    tr.fatigue_resistance,
-    tr.contact_stress,
-    tr.von_mises_stress,
-    
-    -- 计算模拟
-    sim.software as simulation_software,
-    sim.input_params as simulation_input_params,
-    sim.output_params as simulation_output_params,
-    simg.structure_diagram,
-    simg.diagram_description,
-    
-    bi.created_at,
-    bi.updated_at
-FROM basic_info bi
-LEFT JOIN liner_basic lb ON bi.data_id = lb.data_id
-LEFT JOIN head_basic hb ON bi.data_id = hb.data_id
-LEFT JOIN fitting_info fi ON bi.data_id = fi.data_id
-LEFT JOIN stem_basic sb ON bi.data_id = sb.data_id
-LEFT JOIN liner_properties lp ON bi.data_id = lp.data_id
-LEFT JOIN head_properties hp ON bi.data_id = hp.data_id
-LEFT JOIN stem_properties sp ON bi.data_id = sp.data_id
-LEFT JOIN test_results tr ON bi.data_id = tr.data_id
-LEFT JOIN simulation_params sim ON bi.data_id = sim.data_id
-LEFT JOIN simulation_images simg ON bi.data_id = simg.data_id;
+-- 外键约束
+-- FOREIGN KEY (数据ID) REFERENCES basic_info(数据ID);
 
--- ============================================================
--- 索引优化
--- ============================================================
-CREATE INDEX IF NOT EXISTS idx_liner_basic_material ON liner_basic(material_name);
-CREATE INDEX IF NOT EXISTS idx_head_basic_material ON head_basic(material_name);
-CREATE INDEX IF NOT EXISTS idx_stem_basic_material ON stem_basic(material_name);
-
--- ============================================================
--- 触发器：自动更新时间戳
--- ============================================================
-CREATE TRIGGER IF NOT EXISTS update_basic_info_timestamp 
-AFTER UPDATE ON basic_info
-BEGIN
-    UPDATE basic_info SET updated_at = CURRENT_TIMESTAMP WHERE data_id = NEW.data_id;
-END;
-
--- ================================================================================
--- Schema 信息
--- ================================================================================
--- 版本: 2.0
--- 表数量: 11个表 + 1个视图
--- 主键: data_id (TEXT)
--- 外键关系: 所有从表通过data_id关联basic_info主表
--- 级联删除: 启用 (删除主表记录时自动删除所有关联记录)
--- ================================================================================
+CREATE INDEX IF NOT EXISTS idx_simulation_images_dataid ON simulation_images(数据ID);

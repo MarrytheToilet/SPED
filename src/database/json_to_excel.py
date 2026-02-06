@@ -88,11 +88,21 @@ class JSONToExcelExporter:
             for table_name in tables_data.keys():
                 table_data = record.get(table_name)
                 if table_data and table_data is not None:
-                    # 添加来源信息
-                    row_data = dict(table_data)
-                    row_data['来源文件'] = record.get('_source_file', '')
-                    row_data['论文ID'] = record.get('_paper_id', '')
-                    tables_data[table_name].append(row_data)
+                    # 处理数组格式（如表11可能有多个图片）
+                    if isinstance(table_data, list):
+                        # 数组格式：每个元素是一条记录
+                        for item in table_data:
+                            if isinstance(item, dict):
+                                row_data = dict(item)
+                                row_data['来源文件'] = record.get('_source_file', '')
+                                row_data['论文ID'] = record.get('_paper_id', '')
+                                tables_data[table_name].append(row_data)
+                    elif isinstance(table_data, dict):
+                        # 字典格式：单条记录
+                        row_data = dict(table_data)
+                        row_data['来源文件'] = record.get('_source_file', '')
+                        row_data['论文ID'] = record.get('_paper_id', '')
+                        tables_data[table_name].append(row_data)
         
         return tables_data
     

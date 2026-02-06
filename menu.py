@@ -437,19 +437,21 @@ def run_test_single_extraction():
         input(f"\n{GREEN}按回车键返回...{END}")
         return
     
+    # 递归查找所有包含full.md的目录
     papers = []
-    for paper_dir in parsed_dir.iterdir():
-        if paper_dir.is_dir():
-            full_md = paper_dir / "full.md"
-            if full_md.exists():
-                papers.append(paper_dir.name)
+    for full_md in parsed_dir.rglob("full.md"):
+        paper_dir = full_md.parent
+        papers.append(paper_dir.name)
+    
+    # 排序
+    papers.sort()
     
     if not papers:
         print(f"{RED}❌ 没有找到可用的论文{END}")
         input(f"\n{GREEN}按回车键返回...{END}")
         return
     
-    print(f"{GREEN}可用论文列表：{END}\n")
+    print(f"{GREEN}可用论文列表 (共 {len(papers)} 篇)：{END}\n")
     for i, paper in enumerate(papers[:20], 1):
         print(f"  {i}. {paper}")
     

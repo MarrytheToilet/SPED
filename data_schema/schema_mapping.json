@@ -1,914 +1,955 @@
 {
-  "schema_version": "current",
-  "description": "人工关节材料数据提取 - 规范化多表结构映射",
-  "last_updated": "2026-01-17",
+  "version": "3.0",
+  "last_updated": "2026-02-06",
+  "description": "字段映射和说明",
   "tables": {
-    "基本信息表": {
-      "sheet_id": "1",
-      "description": "记录的基本标识信息和文献来源",
-      "primary_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet1_基本信息表": {
+      "display_name": "Sheet1_基本信息表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "唯一标识符，格式：AJ_YYYYMMDD_随机字符串"
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "应用部位",
+        "应用部位": {
           "type": "TEXT",
-          "required": false,
-          "description": "人工关节的应用部位，如：髋关节、膝关节、肩关节等",
-          "examples": [
-            "髋关节",
-            "膝关节",
-            "肩关节"
-          ]
+          "description": "应用部位的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "产品所属专利号或文献",
+        "产品所属专利号或文献": {
           "type": "TEXT",
-          "required": false,
-          "description": "数据来源的专利号或论文标题/DOI",
-          "examples": [
-            "DOI: 10.1016/j.biomaterials.2023.xxxxx",
-            "US Patent 10,123,456",
-            "CN202310123456.7",
-            "论文标题或专利名称"
-          ]
+          "description": "产品所属专利号或文献的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文标题": {
+          "type": "TEXT",
+          "description": "论文标题的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文DOI号": {
+          "type": "TEXT",
+          "description": "论文DOI号的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "内衬基本信息表": {
-      "sheet_id": "2",
-      "description": "内衬材料的基本属性和加工工艺",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet2_内衬基本信息表": {
+      "display_name": "Sheet2_内衬基本信息表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "内衬材料类别",
+        "内衬材料类别": {
           "type": "TEXT",
-          "description": "材料类型",
-          "examples": [
-            "高分子聚合物",
-            "陶瓷",
-            "金属",
-            "复合材料"
-          ]
+          "description": "内衬材料类别的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬材料名称",
+        "内衬材料名称": {
           "type": "TEXT",
-          "description": "具体材料名称",
-          "examples": [
-            "UHMWPE",
-            "Vit-E diffused XLPE",
-            "Al₂O₃陶瓷",
-            "CFR-PEEK"
-          ]
+          "description": "内衬材料名称的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬厚度(mm)",
+        "成型方式": {
           "type": "TEXT",
-          "description": "内衬的厚度，带单位",
-          "examples": [
-            "4.3 mm",
-            "6.3 mm",
-            "10.3 mm"
-          ]
+          "description": "成型方式的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬偏移(mm)",
+        "熔融温度": {
           "type": "TEXT",
-          "description": "内衬的偏移量，带单位",
-          "examples": [
-            "2 mm",
-            "3 mm",
-            "4 mm"
-          ]
+          "description": "熔融温度的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬锁定机制",
+        "成型压力": {
           "type": "TEXT",
-          "description": "内衬的锁定方式",
-          "examples": [
-            "6个防旋卡扣",
-            "螺纹锁定",
-            "压配合"
-          ]
+          "description": "成型压力的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬加工工艺",
+        "保温时间": {
           "type": "TEXT",
-          "description": "内衬的加工方法",
-          "examples": [
-            "等静压成型",
-            "压缩成型",
-            "注塑成型",
-            "机械加工"
-          ]
+          "description": "保温时间的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬后处理",
+        "碳纤维质量分数": {
           "type": "TEXT",
-          "description": "内衬的后处理工艺",
-          "examples": [
-            "维生素E扩散后在130°C下均质退火24小时",
-            "真空环境下110℃保温72小时",
-            "辐照交联"
-          ]
+          "description": "碳纤维质量分数的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳纤维长度": {
+          "type": "TEXT",
+          "description": "碳纤维长度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳纤维外径": {
+          "type": "TEXT",
+          "description": "碳纤维外径的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳纳米管质量分数": {
+          "type": "TEXT",
+          "description": "碳纳米管质量分数的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳纳米管长度": {
+          "type": "TEXT",
+          "description": "碳纳米管长度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳纳米管外径": {
+          "type": "TEXT",
+          "description": "碳纳米管外径的详细信息",
+          "example": "",
+          "required": false
+        },
+        "石墨烯质量分数": {
+          "type": "TEXT",
+          "description": "石墨烯质量分数的详细信息",
+          "example": "",
+          "required": false
+        },
+        "石墨烯厚度": {
+          "type": "TEXT",
+          "description": "石墨烯厚度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "石墨烯长度": {
+          "type": "TEXT",
+          "description": "石墨烯长度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳化硅质量分数": {
+          "type": "TEXT",
+          "description": "碳化硅质量分数的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬厚度(mm)": {
+          "type": "TEXT",
+          "description": "内衬厚度(mm)的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬偏移(mm)": {
+          "type": "TEXT",
+          "description": "内衬偏移(mm)的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬锁定机制": {
+          "type": "TEXT",
+          "description": "内衬锁定机制的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬加工工艺": {
+          "type": "TEXT",
+          "description": "内衬加工工艺的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬后处理": {
+          "type": "TEXT",
+          "description": "内衬后处理的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "球头基本信息表": {
-      "sheet_id": "3",
-      "description": "球头材料的基本属性和加工工艺",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet3_球头基本信息表": {
+      "display_name": "Sheet3_球头基本信息表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "球头材料类别",
+        "球头材料类别": {
           "type": "TEXT",
-          "description": "材料类型",
-          "examples": [
-            "金属",
-            "陶瓷",
-            "复合材料"
-          ]
+          "description": "球头材料类别的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头材料名称",
+        "球头材料名称": {
           "type": "TEXT",
-          "description": "具体材料名称",
-          "examples": [
-            "CoCrMo",
-            "Ti-6Al-4V",
-            "Al₂O₃陶瓷",
-            "ZrO₂陶瓷"
-          ]
+          "description": "球头材料名称的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头直径(mm)",
+        "球头合金成分": {
           "type": "TEXT",
-          "description": "球头的直径尺寸，带单位",
-          "examples": [
-            "28 mm",
-            "32 mm",
-            "36 mm"
-          ]
+          "description": "球头合金成分的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头纹理",
+        "球头直径(mm)": {
           "type": "TEXT",
-          "description": "球头表面的纹理特征",
-          "examples": [
-            "光滑",
-            "微纹理",
-            "无纹理"
-          ]
+          "description": "球头直径(mm)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头加工工艺",
+        "球头纹理": {
           "type": "TEXT",
-          "description": "球头的加工方法",
-          "examples": [
-            "锻造",
-            "铸造",
-            "机械加工",
-            "烧结"
-          ]
+          "description": "球头纹理的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头后处理",
+        "球头加工工艺": {
           "type": "TEXT",
-          "description": "球头的后处理工艺",
-          "examples": [
-            "抛光",
-            "电抛光",
-            "热处理",
-            "表面涂层"
-          ]
+          "description": "球头加工工艺的详细信息",
+          "example": "",
+          "required": false
+        },
+        "球头后处理": {
+          "type": "TEXT",
+          "description": "球头后处理的详细信息",
+          "example": "",
+          "required": false
+        },
+        "球头晶粒尺寸": {
+          "type": "TEXT",
+          "description": "球头晶粒尺寸的详细信息",
+          "example": "",
+          "required": false
+        },
+        "球头晶粒取向": {
+          "type": "TEXT",
+          "description": "球头晶粒取向的详细信息",
+          "example": "",
+          "required": false
+        },
+        "球头相组成": {
+          "type": "TEXT",
+          "description": "球头相组成的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳化物尺寸": {
+          "type": "TEXT",
+          "description": "碳化物尺寸的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳化物分布位置": {
+          "type": "TEXT",
+          "description": "碳化物分布位置的详细信息",
+          "example": "",
+          "required": false
+        },
+        "碳化物连续性": {
+          "type": "TEXT",
+          "description": "碳化物连续性的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "配合信息表": {
-      "sheet_id": "4",
-      "description": "内衬与球头的配合参数",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet4_配合信息表": {
+      "display_name": "Sheet4_配合信息表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "内衬-球头径向间隙(mm)",
+        "内衬-球头径向间隙(mm)": {
           "type": "TEXT",
-          "description": "内衬内径与球头外径的间隙，带单位",
-          "examples": [
-            "0.05 mm",
-            "0.1 mm",
-            "0.15 mm"
-          ]
+          "description": "内衬-球头径向间隙(mm)的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "股骨柄基本信息表": {
-      "sheet_id": "5",
-      "description": "股骨柄的几何参数和材料信息",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet5_股骨柄基本信息表": {
+      "display_name": "Sheet5_股骨柄基本信息表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "股骨柄材料类别",
+        "股骨柄材料类别": {
           "type": "TEXT",
-          "description": "材料类型",
-          "examples": [
-            "金属",
-            "陶瓷",
-            "复合材料"
-          ]
+          "description": "股骨柄材料类别的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄材料名称",
+        "股骨柄材料名称": {
           "type": "TEXT",
-          "description": "具体材料名称",
-          "examples": [
-            "Ti-6Al-4V",
-            "CoCrMo",
-            "不锈钢316L",
-            "钽金属"
-          ]
+          "description": "股骨柄材料名称的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "锥度(°)",
+        "锥度(°)": {
           "type": "TEXT",
-          "description": "锥颈的锥度角度，带单位",
-          "examples": [
-            "12/14",
-            "5° 40'",
-            "12.7°"
-          ]
+          "description": "锥度(°)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "锥颈尺寸",
+        "锥颈尺寸": {
           "type": "TEXT",
-          "description": "锥颈的尺寸规格",
-          "examples": [
-            "S",
-            "M",
-            "L",
-            "XL"
-          ]
+          "description": "锥颈尺寸的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "颈长(mm)",
+        "颈长(mm)": {
           "type": "TEXT",
-          "description": "股骨柄颈部长度，带单位",
-          "examples": [
-            "35 mm",
-            "40 mm",
-            "45 mm"
-          ]
+          "description": "颈长(mm)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "锥套设计",
+        "锥套设计": {
           "type": "TEXT",
-          "description": "锥套的设计方式",
-          "examples": [
-            "有锥套",
-            "无锥套",
-            "可调节锥套"
-          ]
+          "description": "锥套设计的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "锥度间隙(°)",
+        "锥度间隙(°)": {
           "type": "TEXT",
-          "description": "锥度配合间隙，带单位",
-          "examples": [
-            "0.05°",
-            "0.1°"
-          ]
+          "description": "锥度间隙(°)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄颈干角(°)",
+        "股骨柄颈干角(°)": {
           "type": "TEXT",
-          "description": "股骨柄的颈干角度，带单位",
-          "examples": [
-            "130°",
-            "135°",
-            "140°"
-          ]
+          "description": "股骨柄颈干角(°)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄偏心距(mm)",
+        "股骨柄偏心距(mm)": {
           "type": "TEXT",
-          "description": "股骨柄的偏心距离，带单位",
-          "examples": [
-            "35 mm",
-            "40 mm",
-            "45 mm"
-          ]
+          "description": "股骨柄偏心距(mm)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄拓扑结构",
+        "股骨柄拓扑结构": {
           "type": "TEXT",
-          "description": "股骨柄的结构设计",
-          "examples": [
-            "实心",
-            "多孔",
-            "网格结构",
-            "梯度孔隙"
-          ]
+          "description": "股骨柄拓扑结构的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄孔隙率(%)",
+        "股骨柄孔隙率(%)": {
           "type": "TEXT",
-          "description": "多孔结构的孔隙率，带单位",
-          "examples": [
-            "30%",
-            "50%",
-            "70%"
-          ]
+          "description": "股骨柄孔隙率(%)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄横截面",
+        "股骨柄横截面": {
           "type": "TEXT",
-          "description": "股骨柄的横截面形状",
-          "examples": [
-            "圆形",
-            "椭圆形",
-            "矩形",
-            "不规则"
-          ]
+          "description": "股骨柄横截面的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "柄体长度H(mm)",
+        "柄体长度H(mm)": {
           "type": "TEXT",
-          "description": "股骨柄主体的长度，带单位",
-          "examples": [
-            "120 mm",
-            "150 mm",
-            "180 mm"
-          ]
+          "description": "柄体长度H(mm)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄加工工艺",
+        "股骨柄加工工艺": {
           "type": "TEXT",
-          "description": "股骨柄的制造工艺",
-          "examples": [
-            "锻造",
-            "铸造",
-            "3D打印",
-            "机械加工"
-          ]
+          "description": "股骨柄加工工艺的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄后处理",
+        "股骨柄后处理": {
           "type": "TEXT",
-          "description": "股骨柄的后处理工艺",
-          "examples": [
-            "喷砂",
-            "酸洗",
-            "阳极氧化",
-            "羟基磷灰石涂层"
-          ]
+          "description": "股骨柄后处理的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "内衬物理性能表": {
-      "sheet_id": "6",
-      "description": "内衬材料的力学和物理性能参数",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet6_内衬物理性能表": {
+      "display_name": "Sheet6_内衬物理性能表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "内衬硬度(HV)",
+        "内衬硬度(HV)": {
           "type": "TEXT",
-          "description": "维氏硬度，带单位",
-          "examples": [
-            "35 HV",
-            "45 HV",
-            "180 HV"
-          ]
+          "description": "内衬硬度(HV)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬表面粗糙度(μm)",
+        "内衬表面粗糙度(μm)": {
           "type": "TEXT",
-          "description": "表面粗糙度Ra值，带单位",
-          "examples": [
-            "0.05 μm",
-            "0.1 μm",
-            "0.5 μm"
-          ]
+          "description": "内衬表面粗糙度(μm)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬弹性模量(GPa)",
+        "内衬弹性模量(GPa)": {
           "type": "TEXT",
-          "description": "杨氏模量，带单位",
-          "examples": [
-            "0.8 GPa",
-            "1.5 GPa",
-            "15 GPa"
-          ]
+          "description": "内衬弹性模量(GPa)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬抗压强度(MPa)",
+        "内衬杨氏模量": {
           "type": "TEXT",
-          "description": "抗压强度，带单位",
-          "examples": [
-            "50 MPa",
-            "100 MPa",
-            "200 MPa"
-          ]
+          "description": "内衬杨氏模量的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬屈服强度(MPa)",
+        "内衬极限拉伸强度": {
           "type": "TEXT",
-          "description": "屈服强度，带单位",
-          "examples": [
-            "20 MPa",
-            "40 MPa",
-            "80 MPa"
-          ]
+          "description": "内衬极限拉伸强度的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬密度(g/cm³)",
+        "内衬弯曲强度": {
           "type": "TEXT",
-          "description": "材料密度，带单位",
-          "examples": [
-            "0.93 g/cm³",
-            "1.2 g/cm³",
-            "3.8 g/cm³"
-          ]
+          "description": "内衬弯曲强度的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "内衬泊松比",
+        "内衬剪切强度": {
           "type": "TEXT",
-          "description": "泊松比（无量纲）",
-          "examples": [
-            "0.3",
-            "0.35",
-            "0.4"
-          ]
+          "description": "内衬剪切强度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬断裂韧性": {
+          "type": "TEXT",
+          "description": "内衬断裂韧性的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬抗压强度(MPa)": {
+          "type": "TEXT",
+          "description": "内衬抗压强度(MPa)的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬屈服强度(MPa)": {
+          "type": "TEXT",
+          "description": "内衬屈服强度(MPa)的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬密度(g/cm³)": {
+          "type": "TEXT",
+          "description": "内衬密度(g/cm³)的详细信息",
+          "example": "",
+          "required": false
+        },
+        "内衬泊松比": {
+          "type": "TEXT",
+          "description": "内衬泊松比的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "球头物理性能表": {
-      "sheet_id": "7",
-      "description": "球头材料的力学和物理性能参数",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet7_球头物理性能表": {
+      "display_name": "Sheet7_球头物理性能表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "球头硬度(HV)",
+        "球头硬度(HV)": {
           "type": "TEXT",
-          "description": "维氏硬度，带单位",
-          "examples": [
-            "450 HV",
-            "600 HV",
-            "1800 HV"
-          ]
+          "description": "球头硬度(HV)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头表面粗糙度(nm)",
+        "球头表面粗糙度(nm)": {
           "type": "TEXT",
-          "description": "表面粗糙度Ra值，带单位（注意单位是纳米）",
-          "examples": [
-            "5 nm",
-            "10 nm",
-            "50 nm"
-          ]
+          "description": "球头表面粗糙度(nm)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "弹性模量(GPa)",
+        "弹性模量(GPa)": {
           "type": "TEXT",
-          "description": "杨氏模量，带单位",
-          "examples": [
-            "200 GPa",
-            "110 GPa",
-            "380 GPa"
-          ]
+          "description": "弹性模量(GPa)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头抗压强度(MPa)",
+        "球头抗压强度(MPa)": {
           "type": "TEXT",
-          "description": "抗压强度，带单位",
-          "examples": [
-            "1000 MPa",
-            "2000 MPa",
-            "4000 MPa"
-          ]
+          "description": "球头抗压强度(MPa)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头屈服强度(MPa)",
+        "球头屈服强度(MPa)": {
           "type": "TEXT",
-          "description": "屈服强度，带单位",
-          "examples": [
-            "500 MPa",
-            "900 MPa",
-            "1500 MPa"
-          ]
+          "description": "球头屈服强度(MPa)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头密度(g/cm³)",
+        "球头断裂伸长率": {
           "type": "TEXT",
-          "description": "材料密度，带单位",
-          "examples": [
-            "8.3 g/cm³",
-            "4.5 g/cm³",
-            "6.0 g/cm³"
-          ]
+          "description": "球头断裂伸长率的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "球头泊松比",
+        "球头密度(g/cm³)": {
           "type": "TEXT",
-          "description": "泊松比（无量纲）",
-          "examples": [
-            "0.3",
-            "0.33",
-            "0.35"
-          ]
+          "description": "球头密度(g/cm³)的详细信息",
+          "example": "",
+          "required": false
+        },
+        "球头泊松比": {
+          "type": "TEXT",
+          "description": "球头泊松比的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "股骨柄物理性能表": {
-      "sheet_id": "8",
-      "description": "股骨柄材料的力学和物理性能参数",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet8_股骨柄物理性能表": {
+      "display_name": "Sheet8_股骨柄物理性能表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "股骨柄硬度(HV)",
+        "股骨柄硬度(HV)": {
           "type": "TEXT",
-          "description": "维氏硬度，带单位",
-          "examples": [
-            "300 HV",
-            "450 HV",
-            "600 HV"
-          ]
+          "description": "股骨柄硬度(HV)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄表面粗糙度(μm)",
+        "股骨柄表面粗糙度(μm)": {
           "type": "TEXT",
-          "description": "表面粗糙度Ra值，带单位",
-          "examples": [
-            "0.5 μm",
-            "0.8 μm",
-            "1.5 μm"
-          ]
+          "description": "股骨柄表面粗糙度(μm)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄弹性模量(GPa)",
+        "股骨柄弹性模量(GPa)": {
           "type": "TEXT",
-          "description": "杨氏模量，带单位",
-          "examples": [
-            "110 GPa",
-            "200 GPa",
-            "3.7 GPa（多孔）"
-          ]
+          "description": "股骨柄弹性模量(GPa)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄抗压强度(MPa)",
+        "股骨柄抗压强度(MPa)": {
           "type": "TEXT",
-          "description": "抗压强度，带单位",
-          "examples": [
-            "800 MPa",
-            "1000 MPa",
-            "150 MPa（多孔）"
-          ]
+          "description": "股骨柄抗压强度(MPa)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄屈服强度(MPa)",
+        "股骨柄屈服强度(MPa)": {
           "type": "TEXT",
-          "description": "屈服强度，带单位",
-          "examples": [
-            "500 MPa",
-            "900 MPa",
-            "100 MPa（多孔）"
-          ]
+          "description": "股骨柄屈服强度(MPa)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄密度(g/cm³)",
+        "股骨柄密度(g/cm³)": {
           "type": "TEXT",
-          "description": "材料密度，带单位",
-          "examples": [
-            "4.5 g/cm³",
-            "8.3 g/cm³",
-            "2.5 g/cm³（多孔）"
-          ]
+          "description": "股骨柄密度(g/cm³)的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "股骨柄泊松比",
+        "股骨柄泊松比": {
           "type": "TEXT",
-          "description": "泊松比（无量纲）",
-          "examples": [
-            "0.3",
-            "0.33",
-            "0.35"
-          ]
+          "description": "股骨柄泊松比的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "性能测试结果表": {
-      "sheet_id": "9",
-      "description": "摩擦磨损和力学性能测试结果",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet9_实验参数": {
+      "display_name": "Sheet9_实验参数",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "内衬相含量变化",
+        "实验器材": {
           "type": "TEXT",
-          "description": "材料相结构的变化",
-          "examples": [
-            "晶相增加5%",
-            "无明显变化",
-            "非晶相转变"
-          ]
+          "description": "实验器材的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "累计磨损量",
+        "滑动距离": {
           "type": "TEXT",
-          "description": "累计的磨损量，带单位",
-          "examples": [
-            "0.45 mm³",
-            "2.3 mg",
-            "15.6 mg"
-          ]
+          "description": "滑动距离的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "磨损率",
+        "频率": {
           "type": "TEXT",
-          "description": "单位时间或循环的磨损率，带单位",
-          "examples": [
-            "2.3 mg/Mc",
-            "1.1 mg/百万次",
-            "0.05 mm³/Mc"
-          ]
+          "description": "频率的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "抗疲劳性",
+        "摩擦时间": {
           "type": "TEXT",
-          "description": "疲劳性能表现",
-          "examples": [
-            "10⁶次循环无失效",
-            "疲劳寿命>5×10⁶次"
-          ]
+          "description": "摩擦时间的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "接触应力",
+        "载荷": {
           "type": "TEXT",
-          "description": "接触面的应力值，带单位",
-          "examples": [
-            "25 MPa",
-            "50 MPa",
-            "100 MPa"
-          ]
+          "description": "载荷的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "Von Mises应力",
+        "实验温度": {
           "type": "TEXT",
-          "description": "Von Mises等效应力，带单位",
-          "examples": [
-            "35 MPa",
-            "60 MPa",
-            "120 MPa"
-          ]
+          "description": "实验温度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "润滑液类型": {
+          "type": "TEXT",
+          "description": "润滑液类型的详细信息",
+          "example": "",
+          "required": false
+        },
+        "蛋白质浓度": {
+          "type": "TEXT",
+          "description": "蛋白质浓度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "润滑液pH": {
+          "type": "TEXT",
+          "description": "润滑液pH的详细信息",
+          "example": "",
+          "required": false
+        },
+        "接触载荷": {
+          "type": "TEXT",
+          "description": "接触载荷的详细信息",
+          "example": "",
+          "required": false
+        },
+        "运动模式": {
+          "type": "TEXT",
+          "description": "运动模式的详细信息",
+          "example": "",
+          "required": false
+        },
+        "速率": {
+          "type": "TEXT",
+          "description": "速率的详细信息",
+          "example": "",
+          "required": false
+        },
+        "接触方式": {
+          "type": "TEXT",
+          "description": "接触方式的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "计算模拟参数表": {
-      "sheet_id": "10",
-      "description": "计算模拟的软件和参数设置",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet10_性能测试结果表": {
+      "display_name": "Sheet10_性能测试结果表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "计算建模软件",
+        "内衬相含量变化": {
           "type": "TEXT",
-          "description": "使用的仿真软件",
-          "examples": [
-            "ABAQUS",
-            "ANSYS",
-            "COMSOL",
-            "LS-DYNA"
-          ]
+          "description": "内衬相含量变化的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "计算建模输入参数",
+        "累计磨损量": {
           "type": "TEXT",
-          "description": "模拟的输入参数，JSON格式",
-          "examples": [
-            "{\"载荷\": \"2000 N\", \"边界条件\": \"固定约束\", \"网格大小\": \"0.5 mm\"}"
-          ]
+          "description": "累计磨损量的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "计算建模输出参数",
+        "磨损率": {
           "type": "TEXT",
-          "description": "模拟的输出结果，JSON格式",
-          "examples": [
-            "{\"最大应力\": \"120 MPa\", \"最大位移\": \"0.15 mm\", \"接触压力\": \"35 MPa\"}"
-          ]
+          "description": "磨损率的详细信息",
+          "example": "",
+          "required": false
+        },
+        "摩擦系数": {
+          "type": "TEXT",
+          "description": "摩擦系数的详细信息",
+          "example": "",
+          "required": false
+        },
+        "腐蚀速率": {
+          "type": "TEXT",
+          "description": "腐蚀速率的详细信息",
+          "example": "",
+          "required": false
+        },
+        "离子释放量": {
+          "type": "TEXT",
+          "description": "离子释放量的详细信息",
+          "example": "",
+          "required": false
+        },
+        "磨损颗粒大小": {
+          "type": "TEXT",
+          "description": "磨损颗粒大小的详细信息",
+          "example": "",
+          "required": false
+        },
+        "磨损颗粒形貌": {
+          "type": "TEXT",
+          "description": "磨损颗粒形貌的详细信息",
+          "example": "",
+          "required": false
+        },
+        "摩擦膜组成": {
+          "type": "TEXT",
+          "description": "摩擦膜组成的详细信息",
+          "example": "",
+          "required": false
+        },
+        "摩擦膜厚度": {
+          "type": "TEXT",
+          "description": "摩擦膜厚度的详细信息",
+          "example": "",
+          "required": false
+        },
+        "抗疲劳性": {
+          "type": "TEXT",
+          "description": "抗疲劳性的详细信息",
+          "example": "",
+          "required": false
+        },
+        "接触应力": {
+          "type": "TEXT",
+          "description": "接触应力的详细信息",
+          "example": "",
+          "required": false
+        },
+        "Von Mises应力": {
+          "type": "TEXT",
+          "description": "Von Mises应力的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
     },
-    "计算模拟图像表": {
-      "sheet_id": "11",
-      "description": "计算模拟的结构图和说明",
-      "foreign_key": "数据ID",
-      "fields": [
-        {
-          "name": "数据ID",
+    "Sheet11_计算模拟参数表": {
+      "display_name": "Sheet11_计算模拟参数表",
+      "fields": {
+        "数据ID": {
           "type": "TEXT",
-          "required": true,
-          "description": "外键，关联到基本信息表的数据ID",
-          "examples": [
-            "AJ_20260117_001",
-            "AJ_20260117_abc123"
-          ]
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
         },
-        {
-          "name": "计算建模模拟结构图",
+        "计算建模软件": {
           "type": "TEXT",
-          "description": "图片的路径或描述",
-          "examples": [
-            "Figure 3: FEA stress distribution",
-            "见图5：应力云图"
-          ]
+          "description": "计算建模软件的详细信息",
+          "example": "",
+          "required": false
         },
-        {
-          "name": "计算建模模拟结构图说明",
+        "计算建模输入参数": {
           "type": "TEXT",
-          "description": "对图片的文字说明",
-          "examples": [
-            "应力分布云图显示最大应力集中在接触区域",
-            "Von Mises应力在锥颈处达到最大值"
-          ]
+          "description": "计算建模输入参数的详细信息",
+          "example": "",
+          "required": false
+        },
+        "计算建模输出参数": {
+          "type": "TEXT",
+          "description": "计算建模输出参数的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
         }
-      ]
+      }
+    },
+    "Sheet12_计算模拟图像表": {
+      "display_name": "Sheet12_计算模拟图像表",
+      "fields": {
+        "数据ID": {
+          "type": "TEXT",
+          "description": "数据ID的详细信息",
+          "example": "",
+          "required": true
+        },
+        "计算建模模拟结构图": {
+          "type": "TEXT",
+          "description": "计算建模模拟结构图的详细信息",
+          "example": "",
+          "required": false
+        },
+        "计算建模模拟结构图说明": {
+          "type": "TEXT",
+          "description": "计算建模模拟结构图说明的详细信息",
+          "example": "",
+          "required": false
+        },
+        "来源文件": {
+          "type": "TEXT",
+          "description": "来源文件的详细信息",
+          "example": "",
+          "required": false
+        },
+        "论文ID": {
+          "type": "TEXT",
+          "description": "论文ID的详细信息",
+          "example": "",
+          "required": false
+        }
+      }
     }
-  },
-  "field_categories": {
-    "基本信息": [
-      "数据ID",
-      "应用部位",
-      "产品所属专利号或文献"
-    ],
-    "内衬信息": [
-      "内衬材料类别",
-      "内衬材料名称",
-      "内衬厚度",
-      "内衬偏移",
-      "内衬锁定机制",
-      "内衬加工工艺",
-      "内衬后处理",
-      "内衬硬度",
-      "内衬表面粗糙度",
-      "内衬弹性模量",
-      "内衬抗压强度",
-      "内衬屈服强度",
-      "内衬密度",
-      "内衬泊松比"
-    ],
-    "球头信息": [
-      "球头材料类别",
-      "球头材料名称",
-      "球头直径",
-      "球头纹理",
-      "球头加工工艺",
-      "球头后处理",
-      "球头硬度",
-      "球头表面粗糙度",
-      "弹性模量",
-      "球头抗压强度",
-      "球头屈服强度",
-      "球头密度",
-      "球头泊松比"
-    ],
-    "股骨柄信息": [
-      "股骨柄材料类别",
-      "股骨柄材料名称",
-      "锥度",
-      "锥颈尺寸",
-      "颈长",
-      "锥套设计",
-      "锥度间隙",
-      "股骨柄颈干角",
-      "股骨柄偏心距",
-      "股骨柄拓扑结构",
-      "股骨柄孔隙率",
-      "股骨柄横截面",
-      "柄体长度H",
-      "股骨柄加工工艺",
-      "股骨柄后处理",
-      "股骨柄硬度",
-      "股骨柄表面粗糙度",
-      "股骨柄弹性模量",
-      "股骨柄抗压强度",
-      "股骨柄屈服强度",
-      "股骨柄密度",
-      "股骨柄泊松比"
-    ],
-    "配合信息": [
-      "内衬-球头径向间隙"
-    ],
-    "实验结果": [
-      "内衬相含量变化",
-      "累计磨损量",
-      "磨损率",
-      "抗疲劳性",
-      "接触应力",
-      "Von Mises应力"
-    ],
-    "计算模拟": [
-      "计算建模软件",
-      "计算建模输入参数",
-      "计算建模输出参数",
-      "计算建模模拟结构图",
-      "计算建模模拟结构图说明"
-    ]
-  },
-  "extraction_rules": {
-    "数值带单位": "所有数值必须包含单位，如 '450 HV'、'28 mm'、'0.05 μm'",
-    "独立记录": "不同材料组合、实验条件、测试批次各创建一条记录",
-    "精确提取": "只提取明确提到的信息，不推测、不编造",
-    "空值处理": "未提及的字段填 null，不要填写 '未提及'、'无' 等文字"
   }
 }
