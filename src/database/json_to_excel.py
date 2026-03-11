@@ -150,8 +150,8 @@ class JSONToExcelExporter:
                     logger.debug(f"跳过空表: {table_name}")
                     continue
                 
-                # 创建sheet
-                ws = wb.create_sheet(title=f"Sheet{sheet_name}_{table_name}")
+                # 创建sheet (table_name已经包含Sheet前缀，不需要再加)
+                ws = wb.create_sheet(title=table_name)
                 
                 # 写入数据
                 self._write_table_to_sheet(ws, table_def, data)
@@ -182,23 +182,15 @@ class JSONToExcelExporter:
                                table_def: Dict, 
                                data: List[Dict]):
         """写入表数据到sheet"""
-        # 获取列定义
+        # 获取列定义（schema中已包含所有字段，不需要额外添加）
         columns = table_def.get('columns', [])
-        
-        # 添加额外列
-        extra_columns = [
-            {'name': '来源文件', 'description': '数据来源的JSON文件'},
-            {'name': '论文ID', 'description': '论文标识'}
-        ]
-        
-        all_columns = columns + extra_columns
         
         # 写表头
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
         header_font = Font(color="FFFFFF", bold=True, size=11)
         header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
         
-        for col_idx, col_def in enumerate(all_columns, 1):
+        for col_idx, col_def in enumerate(columns, 1):
             cell = ws.cell(row=1, column=col_idx)
             cell.value = col_def.get('name', '')
             cell.fill = header_fill
@@ -211,7 +203,7 @@ class JSONToExcelExporter:
         
         # 写数据
         for row_idx, row_data in enumerate(data, 2):
-            for col_idx, col_def in enumerate(all_columns, 1):
+            for col_idx, col_def in enumerate(columns, 1):
                 col_name = col_def.get('name', '')
                 value = row_data.get(col_name)
                 

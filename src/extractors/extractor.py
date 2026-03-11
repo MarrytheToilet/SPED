@@ -84,7 +84,10 @@ class Extractor:
             self.save_result(paper_id, result)
             
             # 统计
-            count = result.get("count", 0)
+            count = result.get("count")
+            if count is None:
+                # 单条记录格式没有count字段，设置为1
+                count = 1 if result else 0
             print(f"\n✅ 成功: 提取 {count} 条记录")
             
             return {
@@ -186,14 +189,19 @@ class Extractor:
                     
                     if result["status"] == "success":
                         stats["success"] += 1
-                        stats["total_records"] += result.get("count", 0)
+                        # 处理count可能为None的情况
+                        count = result.get("count")
+                        if count is None:
+                            count = 1 if result.get("result") else 0
+                        stats["total_records"] += count
                         status_icon = "✓"
                     else:
                         stats["failed"] += 1
                         failed_papers.append(paper["name"])
                         status_icon = "✗"
+                        count = 0
                     
-                    print(f"[{completed_count}/{total_count}] {status_icon} {paper['name']} - {result.get('count', 0)} 条记录")
+                    print(f"[{completed_count}/{total_count}] {status_icon} {paper['name']} - {count} 条记录")
                     
                 except Exception as e:
                     stats["failed"] += 1

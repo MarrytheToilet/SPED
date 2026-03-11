@@ -391,7 +391,11 @@ class LLMExtractionAgent(BaseAgent):
             return {"dataid": dataid, "paper_id": paper_id, "records": [], "count": 0}
         elif len(all_records) == 1:
             self.log_info(f"返回单条记录")
-            return all_records[0]
+            # 确保单条记录也有count字段
+            record = all_records[0]
+            if 'count' not in record:
+                record['count'] = 1
+            return record
         else:
             self.log_info(f"返回 {len(all_records)} 条记录")
             return {"dataid": dataid, "paper_id": paper_id, "records": all_records, "count": len(all_records)}
@@ -496,7 +500,11 @@ class LLMExtractionAgent(BaseAgent):
                 return {"dataid": dataid, "paper_id": paper_id, "records": [], "count": 0}
             elif len(records) == 1:
                 self.log_info(f"返回单条记录")
-                return records[0]
+                # 确保单条记录也有count字段
+                record = records[0]
+                if 'count' not in record:
+                    record['count'] = 1
+                return record
             else:
                 self.log_info(f"返回 {len(records)} 条记录")
                 return {"dataid": dataid, "paper_id": paper_id, "records": records, "count": len(records)}

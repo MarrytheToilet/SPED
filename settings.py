@@ -95,7 +95,7 @@ AVAILABLE_MODELS = {
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
         "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
     },
-    "Pro/moonshotai/Kimi-K2.5": {
+    "Pro/zai-org/GLM-5": {
         "provider": "siliconflow",
         "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
         "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),

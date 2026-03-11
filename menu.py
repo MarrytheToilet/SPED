@@ -127,24 +127,26 @@ def show_workflow_guide():
 
 
 def run_pdf_menu():
-    """PDF处理菜单 - 集成版本"""
+    """PDF处理菜单 - 新版集成"""
     while True:
         clear_screen()
         print(f"\n{BLUE}{'='*80}{END}")
-        print(f"{BLUE}{BOLD}PDF处理菜单{END}")
+        print(f"{BLUE}{BOLD}PDF处理菜单（智能版）{END}")
         print(f"{BLUE}{'='*80}{END}\n")
         
-        print(f"{GREEN}{BOLD}PDF处理流程：{END}\n")
-        print(f"  {BOLD}1.{END} 📤 上传PDF到MinerU（自动去重）")
-        print(f"  {BOLD}2.{END} 📊 查询处理状态")
-        print(f"  {BOLD}3.{END} 📥 下载解析结果（自动去重）")
-        print(f"  {BOLD}4.{END} 📈 查看统计信息")
-        print(f"  {BOLD}5.{END} 🔧 完整流程：上传→查询→下载")
+        print(f"{CYAN}{BOLD}✨ 推荐使用（智能化）：{END}\n")
+        print(f"  {BOLD}1.{END} 🚀 快速处理新PDF（自动：扫描→上传→等待→下载）")
+        print(f"  {BOLD}2.{END} 📊 查看系统统计")
         print()
-        print(f"{YELLOW}{BOLD}高级选项：{END}\n")
-        print(f"  {BOLD}6.{END} ⚠️  下载部分完成的批次")
-        print(f"  {BOLD}7.{END} 🔄 重置卡住的批次")
-        print(f"  {BOLD}8.{END} 🔃 强制重新下载批次")
+        print(f"{YELLOW}{BOLD}分步执行（精细控制）：{END}\n")
+        print(f"  {BOLD}3.{END} 📂 扫描新PDF（智能去重）")
+        print(f"  {BOLD}4.{END} 📤 上传到MinerU")
+        print(f"  {BOLD}5.{END} 📋 查询处理状态")
+        print(f"  {BOLD}6.{END} ⬇️  下载解析结果")
+        print(f"  {BOLD}7.{END} 📝 列出待处理PDF")
+        print()
+        print(f"{MAGENTA}{BOLD}旧版工具（兼容）：{END}\n")
+        print(f"  {BOLD}8.{END} 🔧 使用旧版PDF工具")
         print()
         print(f"  {BOLD}0.{END} 🔙 返回主菜单")
         print()
@@ -154,21 +156,21 @@ def run_pdf_menu():
         if choice == "0":
             break
         elif choice == "1":
-            run_pdf_upload()
+            run_pdf_auto()
         elif choice == "2":
-            run_pdf_status()
+            run_pdf_stats_new()
         elif choice == "3":
-            run_pdf_download()
+            run_pdf_scan()
         elif choice == "4":
-            run_pdf_stats()
+            run_pdf_upload_new()
         elif choice == "5":
-            run_pdf_full_workflow()
+            run_pdf_status_new()
         elif choice == "6":
-            run_pdf_download_partial()
+            run_pdf_download_new()
         elif choice == "7":
-            run_pdf_reset_batch()
+            run_pdf_list_pending()
         elif choice == "8":
-            run_pdf_force_download()
+            pdf_menu_old()
         else:
             print(f"\n{RED}❌ 无效选项{END}")
             input(f"\n{GREEN}按回车键继续...{END}")
@@ -328,6 +330,146 @@ def run_pdf_force_download():
     os.system(f"python scripts/pdf_process.py force-download --batch-id {batch_id}")
     
     input(f"\n{GREEN}按回车键继续...{END}")
+
+
+# ==================== 新版PDF管理器函数 ====================
+
+def run_pdf_auto():
+    """自动处理新PDF"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}🚀 自动处理新PDF{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    print(f"{CYAN}此功能将自动执行：{END}")
+    print(f"  1. 扫描 data/raw/pdfs/ 目录")
+    print(f"  2. 上传新PDF到MinerU")
+    print(f"  3. 轮询等待处理完成")
+    print(f"  4. 自动下载结果\n")
+    
+    print(f"{YELLOW}提示：请确保已将新PDF放入 data/raw/pdfs/ 目录{END}\n")
+    
+    confirm = input(f"{GREEN}是否等待处理完成？(y/n, 默认n): {END}").strip().lower()
+    
+    if confirm == 'y':
+        os.system("python scripts/pdf_manager.py auto --wait")
+    else:
+        os.system("python scripts/pdf_manager.py auto")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_scan():
+    """扫描新PDF"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}📂 扫描新PDF{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_manager.py scan")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_upload_new():
+    """上传PDF（新版）"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}📤 上传PDF到MinerU（新版）{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_manager.py upload")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_status_new():
+    """查询状态（新版）"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}📊 查询处理状态（新版）{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_manager.py status")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_download_new():
+    """下载结果（新版）"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}⬇️  下载解析结果（新版）{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_manager.py download")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_stats_new():
+    """查看统计（新版）"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}📊 系统统计（新版）{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_manager.py stats")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def run_pdf_list_pending():
+    """列出待处理PDF"""
+    print(f"\n{BLUE}{'='*80}{END}")
+    print(f"{BLUE}📝 待处理PDF列表{END}")
+    print(f"{BLUE}{'='*80}{END}\n")
+    
+    os.system("python scripts/pdf_manager.py list-pending")
+    
+    input(f"\n{GREEN}按回车键继续...{END}")
+
+
+def pdf_menu_old():
+    """旧版PDF处理菜单（兼容）"""
+    while True:
+        clear_screen()
+        print(f"\n{BLUE}{'='*80}{END}")
+        print(f"{BLUE}{BOLD}PDF处理菜单（旧版）{END}")
+        print(f"{BLUE}{'='*80}{END}\n")
+        
+        print(f"{GREEN}{BOLD}PDF处理流程：{END}\n")
+        print(f"  {BOLD}1.{END} 📤 上传PDF到MinerU（自动去重）")
+        print(f"  {BOLD}2.{END} 📊 查询处理状态")
+        print(f"  {BOLD}3.{END} 📥 下载解析结果（自动去重）")
+        print(f"  {BOLD}4.{END} 📈 查看统计信息")
+        print(f"  {BOLD}5.{END} 🔧 完整流程：上传→查询→下载")
+        print()
+        print(f"{YELLOW}{BOLD}高级选项：{END}\n")
+        print(f"  {BOLD}6.{END} ⚠️  下载部分完成的批次")
+        print(f"  {BOLD}7.{END} 🔄 重置卡住的批次")
+        print(f"  {BOLD}8.{END} 🔃 强制重新下载批次")
+        print()
+        print(f"  {BOLD}0.{END} 🔙 返回上级菜单")
+        print()
+        
+        choice = input(f"{GREEN}请选择操作 (0-8): {END}").strip()
+        
+        if choice == "0":
+            break
+        elif choice == "1":
+            run_pdf_upload()
+        elif choice == "2":
+            run_pdf_status()
+        elif choice == "3":
+            run_pdf_download()
+        elif choice == "4":
+            run_pdf_stats()
+        elif choice == "5":
+            run_pdf_full_workflow()
+        elif choice == "6":
+            run_pdf_download_partial()
+        elif choice == "7":
+            run_pdf_reset_batch()
+        elif choice == "8":
+            run_pdf_force_download()
+        else:
+            print(f"\n{RED}❌ 无效选项{END}")
+            input(f"\n{GREEN}按回车键继续...{END}")
 
     
     confirm = input(f"{GREEN}确认开始完整流程？(y/n): {END}")
