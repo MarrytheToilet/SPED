@@ -8,16 +8,16 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from .base_agent import BaseAgent
+from .base import BaseAgent, AgentResult
 from settings import DB_PATH
 
 
-class DatabaseInsertionAgent(BaseAgent):
+class DatabaseInsertionAgent(BaseAgent[Dict[str, Any], Dict[str, Any]]):
     """数据库插入Agent"""
     
     def __init__(self):
         super().__init__(
-            name="数据库插入Agent",
+            name="DatabaseInsertionAgent",
             description="将提取的结构化数据插入到SQLite数据库"
         )
         self.conn = None
@@ -99,7 +99,7 @@ class DatabaseInsertionAgent(BaseAgent):
                 }
             
             else:
-                # 单组实验（向后兼容）
+                # 单组实验
                 dataid = input_data.get("dataid")
                 
                 if not dataid:

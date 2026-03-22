@@ -53,7 +53,7 @@ class InteractiveUI:
             return None
     
     @staticmethod
-    def select_mode(default: str = "full") -> str:
+    def select_mode(default: str = "skeleton_fill") -> str:
         """
         交互式选择提取模式
         
@@ -64,17 +64,21 @@ class InteractiveUI:
             str: 选择的模式
         """
         print("请选择提取模式:")
-        print("  1. full  - 全文提取（一次性处理，速度快，适合中短文本）")
-        print("  2. chunk - 分块提取（适合长文本，LLM自动判断new/enrich）")
+        print("  1. skeleton_fill (推荐) - 两阶段骨架填充（先识别记录，再分块填充，稳定性最好）")
+        print("  2. full                 - 全文提取（一次性处理，速度快，适合短论文<30KB）")
+        print("  3. chunk                - 分块提取（适合长文本，LLM自动判断new/enrich）")
         
-        mode_choice = input("\n选择模式 (1/2，默认1): ").strip()
+        mode_choice = input("\n选择模式 (1/2/3，默认1): ").strip()
         
         if mode_choice == "2":
+            mode = "full"
+            print("✓ 已选择：全文模式\n")
+        elif mode_choice == "3":
             mode = "chunk"
             print("✓ 已选择：分块模式\n")
         else:
-            mode = "full"
-            print("✓ 已选择：全文模式\n")
+            mode = "skeleton_fill"
+            print("✓ 已选择：两阶段骨架填充模式（推荐）\n")
         
         return mode
     

@@ -1,4 +1,11 @@
 """工具模块"""
-from .prompt_builder import build_prompt, add_paper_text
+from .doi_extractor import DOIExtractor
+from .concurrency import ConcurrencyController, RateLimiter, TaskResult, BatchStats
 
-__all__ = ['build_prompt', 'add_paper_text']
+__all__ = [
+    'DOIExtractor',
+    'ConcurrencyController',
+    'RateLimiter',
+    'TaskResult',
+    'BatchStats',
+]

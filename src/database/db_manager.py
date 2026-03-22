@@ -30,6 +30,23 @@ class DatabaseManager:
         "Sheet12_计算模拟图像表": "simulation_images"
     }
     
+    # 列名映射（兼容旧版或不同命名的JSON）
+    COLUMN_MAPPING = {
+        # 球头基本信息表
+        "球头直径": "股骨头直径",
+        "球头半径": "股骨头直径",  # 需要转换
+        # 内衬基本信息表
+        "内衬直径": "内衬外径",
+        # 物理性能表
+        "弹性模量": "杨氏模量",
+        "模量": "杨氏模量",
+        "屈服强度": "抗拉强度",  # 近似映射
+        # 其他常见映射
+        "厚度": "壁厚",
+        "材质": "材料",
+        "材料名称": "材料",
+    }
+    
     def __init__(self, db_path: str = "data/artificial_joint.db"):
         """
         初始化数据库管理器
@@ -39,7 +56,63 @@ class DatabaseManager:
         """
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._table_columns_cache = {}  # 缓存表列信息
         self._ensure_database()
+    
+    def _get_table_columns(self, table_name: str) -> set:
+        """获取表的所有列名"""
+        if table_name in self._table_columns_cache:
+            return self._table_columns_cache[table_name]
+        
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"PRAGMA table_info({table_name})")
+            columns = {row[1] for row in cursor.fetchall()}
+            self._table_columns_cache[table_name] = columns
+            return columns
+    
+    def _add_column_if_not_exists(self, cursor, table_name: str, column_name: str):
+        """动态添加列（如果不存在）"""
+        try:
+            # SQLite 添加列，默认TEXT类型
+            cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN '{column_name}' TEXT")
+            # 更新缓存
+            if table_name in self._table_columns_cache:
+                self._table_columns_cache[table_name].add(column_name)
+            logger.debug(f"自动添加列: {table_name}.{column_name}")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" not in str(e).lower():
+                raise
+    
+    def _map_column_name(self, column: str, table_name: str, cursor=None) -> str:
+        """
+        映射列名到数据库实际列名
+        
+        Args:
+            column: 原始列名
+            table_name: 表名
+            cursor: 数据库游标（用于添加列）
+            
+        Returns:
+            映射后的列名
+        """
+        table_columns = self._get_table_columns(table_name)
+        
+        # 1. 直接匹配
+        if column in table_columns:
+            return column
+        
+        # 2. 通过映射表匹配
+        mapped = self.COLUMN_MAPPING.get(column)
+        if mapped and mapped in table_columns:
+            return mapped
+        
+        # 3. 自动添加列（需要cursor）
+        if cursor is not None:
+            self._add_column_if_not_exists(cursor, table_name, column)
+            return column
+        
+        return column
     
     def _ensure_database(self):
         """确保数据库和表存在"""
@@ -192,7 +265,10 @@ class DatabaseManager:
                         if key in ['created_at', 'updated_at']:
                             continue
                         
-                        columns.append(f"'{key}'")
+                        # 列名映射（自动添加不存在的列）
+                        mapped_key = self._map_column_name(key, table_name, cursor=cursor)
+                        
+                        columns.append(f"'{mapped_key}'")
                         
                         # 处理值
                         if value is None:
@@ -204,18 +280,27 @@ class DatabaseManager:
                         
                         placeholders.append('?')
                     
-                    # 构建INSERT OR REPLACE语句
-                    sql = f"""
-                        INSERT OR REPLACE INTO {table_name} 
-                        ({', '.join(columns)}, 'updated_at')
-                        VALUES ({', '.join(placeholders)}, CURRENT_TIMESTAMP)
-                    """
+                    if not columns:
+                        # 没有有效列，插入空记录
+                        sql = f"""
+                            INSERT OR REPLACE INTO {table_name} 
+                            ('数据ID', 'updated_at')
+                            VALUES (?, CURRENT_TIMESTAMP)
+                        """
+                        cursor.execute(sql, [data_id])
+                    else:
+                        # 构建INSERT OR REPLACE语句
+                        sql = f"""
+                            INSERT OR REPLACE INTO {table_name} 
+                            ({', '.join(columns)}, 'updated_at')
+                            VALUES ({', '.join(placeholders)}, CURRENT_TIMESTAMP)
+                        """
+                        cursor.execute(sql, values)
                     
-                    cursor.execute(sql, values)
                     success_count += 1
                 
                 conn.commit()
-                logger.debug(f"✅ 成功插入记录 {data_id}，更新了 {success_count} 个表（包含空表）")
+                logger.debug(f"✅ 成功插入记录 {data_id}，更新了 {success_count} 个表")
                 return True
                 
         except Exception as e:
