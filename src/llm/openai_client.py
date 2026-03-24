@@ -80,12 +80,19 @@ class OpenAICompatibleClient(LLMClient):
             # 添加超时
             request_kwargs["timeout"] = self.config.timeout
             
+            # 强制JSON输出模式（默认开启）
+            if kwargs.get("json_mode", True):
+                request_kwargs["response_format"] = {"type": "json_object"}
+            
             # 供应商特定参数
             extra_body = self._build_extra_body()
             if extra_body:
                 request_kwargs["extra_body"] = extra_body
             
-            self.logger.debug(f"请求参数: max_tokens={request_kwargs['max_tokens']}")
+            self.logger.debug(
+                f"请求参数: max_tokens={request_kwargs['max_tokens']}, "
+                f"json_mode={kwargs.get('json_mode', True)}"
+            )
             
             # 调用API
             response = self.client.chat.completions.create(**request_kwargs)

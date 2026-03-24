@@ -1,8 +1,5 @@
 """
 提取服务 - 高层API，编排LLM和Prompt组件
-
-这是解耦后的新接口，推荐使用。
-旧的 extraction_agent.py 保留向后兼容。
 """
 from typing import Dict, List, Any, Optional
 from pathlib import Path
@@ -51,12 +48,13 @@ class ExtractionService:
     
     使用示例：
     ```python
+    # 全量提取（短论文）
+    service = ExtractionService(mode="full")
+    result = service.extract(paper_id="xxx", content="论文全文")
+    
+    # 两阶段骨架填充（长论文）
     service = ExtractionService(mode="skeleton_fill")
-    result = service.extract(
-        paper_id="论文ID",
-        content="论文全文",
-        chunks=["chunk1", "chunk2", ...]
-    )
+    result = service.extract(paper_id="xxx", content="论文全文", chunks=chunk_list)
     ```
     """
     

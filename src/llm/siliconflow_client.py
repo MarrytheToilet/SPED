@@ -97,6 +97,10 @@ class SiliconFlowClient(LLMClient):
             
             request_kwargs["timeout"] = self.config.timeout
             
+            # 强制JSON输出模式（默认开启）
+            if kwargs.get("json_mode", True):
+                request_kwargs["response_format"] = {"type": "json_object"}
+            
             # SiliconFlow 特有参数
             extra_body = self._build_extra_body()
             if extra_body:
@@ -105,6 +109,7 @@ class SiliconFlowClient(LLMClient):
             self.logger.debug(
                 f"SiliconFlow API调用: model={self.config.model}, "
                 f"max_tokens={request_kwargs['max_tokens']}, "
+                f"json_mode={kwargs.get('json_mode', True)}, "
                 f"extra_body={extra_body}"
             )
             

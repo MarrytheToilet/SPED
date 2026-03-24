@@ -16,8 +16,9 @@ import requests
 import zipfile
 import time
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -689,6 +690,273 @@ class PDFProcessor:
         conn.close()
         return batches
     
+    def list_downloadable_batches(self) -> List[Dict[str, Any]]:
+        """列出所有可下载的批次（状态为uploaded或partial的批次）"""
+        batches = self.list_batches()
+        # 过滤出需要下载的批次（非completed状态）
+        downloadable = [b for b in batches if b['status'] in ('uploaded', 'partial', 'processing')]
+        return downloadable
+    
+    def download_batch_parallel(
+        self, 
+        batch_id: str, 
+        output_dir: Path = None,
+        max_workers: int = 4
+    ) -> Dict[str, Any]:
+        """
+        并行下载批次处理结果
+        
+        Args:
+            batch_id: 批次ID
+            output_dir: 输出目录
+            max_workers: 最大并行数
+        
+        Returns:
+            下载结果统计
+        """
+        if output_dir is None:
+            output_dir = PARSED_DIR
+        
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        print(f"\n📥 并行下载批次: {batch_id} (workers={max_workers})")
+        print(f"📁 输出目录: {output_dir}")
+        
+        # 获取批次结果
+        status = self.check_batch_status(batch_id)
+        if not status:
+            return {"success": False, "error": "获取批次状态失败"}
+        
+        if status["done"] == 0:
+            print(f"\n⚠️ 批次中没有已完成的文件")
+            return {"success": False, "error": "没有已完成的文件"}
+        
+        extract_results = status["results"]
+        
+        # 过滤出需要下载的文件
+        to_download = []
+        already_done = 0
+        
+        conn = sqlite3.connect(self.db_path)
+        cur = conn.cursor()
+        
+        for item in extract_results:
+            data_id = item.get("data_id", "unknown")
+            filename = item.get("file_name", "unknown.pdf")
+            state = item.get("state", "unknown")
+            zip_url = item.get("full_zip_url", "")
+            
+            if state != "done" or not zip_url:
+                continue
+            
+            # 检查是否已下载
+            cur.execute("""
+                SELECT output_path FROM download_records
+                WHERE batch_id = ? AND data_id = ? AND download_status = 'completed'
+            """, (batch_id, data_id))
+            existing = cur.fetchone()
+            
+            if existing and Path(existing[0]).exists():
+                already_done += 1
+                continue
+            
+            to_download.append({
+                "batch_id": batch_id,
+                "data_id": data_id,
+                "filename": filename,
+                "zip_url": zip_url,
+                "output_dir": output_dir
+            })
+        
+        conn.close()
+        
+        if not to_download:
+            print(f"\n✅ 所有文件已下载完成 ({already_done}个)")
+            return {
+                "success": True,
+                "success_count": already_done,
+                "failed_count": 0,
+                "skipped_count": 0,
+                "total": len(extract_results)
+            }
+        
+        print(f"\n📊 待下载: {len(to_download)}个, 已完成: {already_done}个")
+        
+        # 并行下载
+        success_count = already_done
+        failed_count = 0
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(self._download_single_file, item): item 
+                for item in to_download
+            }
+            
+            for future in as_completed(futures):
+                item = futures[future]
+                try:
+                    result = future.result()
+                    if result["success"]:
+                        success_count += 1
+                        print(f"  ✅ {item['filename']}")
+                    else:
+                        failed_count += 1
+                        print(f"  ❌ {item['filename']}: {result.get('error', '未知错误')}")
+                except Exception as e:
+                    failed_count += 1
+                    print(f"  ❌ {item['filename']}: {e}")
+        
+        # 更新批次状态
+        conn = sqlite3.connect(self.db_path)
+        total_expected = len(extract_results)
+        if success_count == total_expected:
+            batch_status = 'completed'
+        elif success_count > 0:
+            batch_status = 'partial'
+        else:
+            batch_status = 'uploaded'
+        
+        conn.execute("""
+            UPDATE batches
+            SET status = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE batch_id = ?
+        """, (batch_status, batch_id))
+        conn.commit()
+        conn.close()
+        
+        print(f"\n{'='*60}")
+        print(f"📊 下载统计:")
+        print(f"  ✅ 成功: {success_count}")
+        print(f"  ❌ 失败: {failed_count}")
+        print(f"{'='*60}")
+        
+        return {
+            "success": success_count > 0,
+            "success_count": success_count,
+            "failed_count": failed_count,
+            "skipped_count": 0,
+            "total": len(extract_results)
+        }
+    
+    def _download_single_file(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        """下载单个文件（用于并行下载）"""
+        batch_id = item["batch_id"]
+        data_id = item["data_id"]
+        filename = item["filename"]
+        zip_url = item["zip_url"]
+        output_dir = item["output_dir"]
+        
+        try:
+            # 生成安全的目录名
+            safe_name = "".join(c if c.isalnum() or c in "._- " else "_" 
+                              for c in Path(filename).stem)
+            
+            paper_dir = output_dir / safe_name
+            paper_dir.mkdir(parents=True, exist_ok=True)
+            
+            zip_path = paper_dir / "mineru_output.zip"
+            
+            # 下载ZIP
+            if not self._download_file(zip_url, zip_path):
+                return {"success": False, "error": "下载失败"}
+            
+            # 解压
+            if not self._unzip_file(zip_path, paper_dir):
+                return {"success": False, "error": "解压失败"}
+            
+            # 删除ZIP节省空间
+            zip_path.unlink()
+            
+            # 记录下载成功
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("""
+                INSERT OR REPLACE INTO download_records
+                (batch_id, data_id, filename, output_path, download_status)
+                VALUES (?, ?, ?, ?, 'completed')
+            """, (batch_id, data_id, filename, str(paper_dir)))
+            
+            # 更新PDF状态
+            conn.execute("""
+                UPDATE pdf_files
+                SET status = 'downloaded', updated_at = CURRENT_TIMESTAMP
+                WHERE filename = ?
+            """, (filename,))
+            
+            conn.commit()
+            conn.close()
+            
+            return {"success": True, "output_path": str(paper_dir)}
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def download_all_batches(
+        self, 
+        output_dir: Path = None,
+        max_workers: int = 4
+    ) -> Dict[str, Any]:
+        """
+        下载所有未完成的批次
+        
+        Args:
+            output_dir: 输出目录
+            max_workers: 每个批次的最大并行数
+        
+        Returns:
+            总体统计
+        """
+        batches = self.list_downloadable_batches()
+        
+        if not batches:
+            # 检查是否有任何批次
+            all_batches = self.list_batches()
+            if all_batches:
+                print(f"\n✅ 所有 {len(all_batches)} 个批次都已下载完成")
+            else:
+                print(f"\n⚠️ 没有找到任何批次")
+            return {
+                "success": True,
+                "batches_processed": 0,
+                "total_success": 0,
+                "total_failed": 0
+            }
+        
+        print(f"\n{'='*60}")
+        print(f"📦 批量下载: 共 {len(batches)} 个批次待处理")
+        print(f"{'='*60}")
+        
+        total_success = 0
+        total_failed = 0
+        batches_processed = 0
+        
+        for i, batch in enumerate(batches, 1):
+            batch_id = batch['batch_id']
+            print(f"\n[{i}/{len(batches)}] 批次 {batch['batch_index'] + 1}: {batch_id}")
+            print(f"  文件数: {batch['file_count']}, 当前状态: {batch['status']}")
+            
+            result = self.download_batch_parallel(batch_id, output_dir, max_workers)
+            
+            if result.get("success"):
+                batches_processed += 1
+            total_success += result.get("success_count", 0)
+            total_failed += result.get("failed_count", 0)
+        
+        print(f"\n{'='*60}")
+        print(f"📊 批量下载完成:")
+        print(f"  📦 处理批次: {batches_processed}/{len(batches)}")
+        print(f"  ✅ 成功文件: {total_success}")
+        print(f"  ❌ 失败文件: {total_failed}")
+        print(f"{'='*60}")
+        
+        return {
+            "success": True,
+            "batches_processed": batches_processed,
+            "total_batches": len(batches),
+            "total_success": total_success,
+            "total_failed": total_failed
+        }
+    
     def list_pending_pdfs(self) -> List[Dict[str, Any]]:
         """列出待处理的PDF"""
         conn = sqlite3.connect(self.db_path)
@@ -792,6 +1060,38 @@ def quick_download(batch_id: str, output_dir: Path = None) -> bool:
     processor = PDFProcessor()
     result = processor.download_batch(batch_id, output_dir)
     return result.get("success", False)
+
+
+def quick_download_parallel(batch_id: str, output_dir: Path = None, max_workers: int = 4) -> bool:
+    """
+    快速并行下载：并行下载批次结果
+    
+    Args:
+        batch_id: 批次ID
+        output_dir: 输出目录
+        max_workers: 最大并行数
+    
+    Returns:
+        是否成功
+    """
+    processor = PDFProcessor()
+    result = processor.download_batch_parallel(batch_id, output_dir, max_workers)
+    return result.get("success", False)
+
+
+def quick_download_all(output_dir: Path = None, max_workers: int = 4) -> Dict[str, Any]:
+    """
+    快速批量下载：下载所有未完成的批次
+    
+    Args:
+        output_dir: 输出目录
+        max_workers: 每个批次的最大并行数
+    
+    Returns:
+        下载统计
+    """
+    processor = PDFProcessor()
+    return processor.download_all_batches(output_dir, max_workers)
 
 
 def show_stats() -> None:

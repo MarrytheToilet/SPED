@@ -96,13 +96,31 @@ class ExtractionMode(ABC):
         response = self.llm_client.call(messages, call_id=call_id, **kwargs)
         
         if not response.success:
+            self.logger.warning(f"[{call_id}] LLM调用失败: {response.error}")
             return {"success": False, "data": {}, "error": response.error}
+        
+        # 记录响应长度
+        self.logger.debug(f"[{call_id}] LLM响应: {len(response.content)} 字符")
         
         # 解析JSON
         try:
             data = self._parse_json(response.content)
+            # 记录解析结果摘要
+            record_count = data.get("record_count", len(data.get("records", [])))
+            records_len = len(data.get("records", []))
+            paper_info = data.get("paper_info", {})
+            self.logger.info(
+                f"[{call_id}] JSON解析成功: record_count={record_count}, "
+                f"records数组长度={records_len}, "
+                f"application={paper_info.get('application', '未提供')}"
+            )
             return {"success": True, "data": data, "error": ""}
         except Exception as e:
+            # 记录解析失败的详细信息
+            self.logger.warning(
+                f"[{call_id}] JSON解析失败: {e}\n"
+                f"响应内容前500字符: {response.content[:500]}"
+            )
             return {"success": False, "data": {}, "error": f"JSON解析失败: {e}"}
     
     def _parse_json(self, content: str) -> Dict[str, Any]:

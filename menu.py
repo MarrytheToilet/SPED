@@ -228,36 +228,99 @@ def pdf_download():
             input(f"\n{GREEN}按回车返回...{END}")
             return
         
-        print(f"{GREEN}可下载的批次 (共 {len(batches)} 个):{END}\n")
-        for i, batch in enumerate(batches[:10], 1):
-            print(f"  {i}. {batch['batch_id']}")
+        # 统计批次状态
+        downloadable = [b for b in batches if b['status'] in ('uploaded', 'partial', 'processing')]
+        completed = [b for b in batches if b['status'] == 'completed']
+        
+        print(f"{GREEN}批次列表 (共 {len(batches)} 个):{END}\n")
+        print(f"  {CYAN}可下载: {len(downloadable)} 个, 已完成: {len(completed)} 个{END}\n")
+        
+        for i, batch in enumerate(batches[:15], 1):
+            status_icon = "✅" if batch['status'] == 'completed' else "📥"
+            print(f"  {i}. {status_icon} {batch['batch_id']}")
             print(f"     文件数: {batch['file_count']}, 状态: {batch['status']}")
         
+        if len(batches) > 15:
+            print(f"\n  ... 还有 {len(batches) - 15} 个批次")
+        
+        print(f"\n{CYAN}下载选项:{END}")
+        print(f"  {BOLD}a{END} - 下载所有未完成批次 (推荐)")
+        print(f"  {BOLD}1-{min(15, len(batches))}{END} - 选择单个批次")
+        print(f"  {BOLD}1,3,5{END} - 多选批次 (逗号分隔)")
+        print(f"  {BOLD}回车{END} - 返回")
+        
         print()
-        choice = input(f"{GREEN}选择批次编号 (1-{min(10, len(batches))}): {END}").strip()
+        choice = input(f"{GREEN}请选择: {END}").strip().lower()
         
         if not choice:
             return
         
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(batches):
-                batch_id = batches[idx]['batch_id']
-                print(f"\n{CYAN}下载批次: {batch_id}{END}\n")
-                os.system(f"python scripts/cli.py pdf download {batch_id}")
-                
+        parsed_dir = Path("data/processed/parsed")
+        
+        if choice == 'a' or choice == 'all':
+            # 下载所有未完成批次
+            print(f"\n{CYAN}开始批量下载所有未完成批次...{END}\n")
+            result = processor.download_all_batches(parsed_dir, max_workers=4)
+            
+            if result.get("total_success", 0) > 0:
                 # 下载后自动添加DOI
                 print(f"\n{CYAN}自动添加DOI信息...{END}")
-                parsed_dir = Path("data/processed/parsed")
                 stats = DOIExtractor.process_all_papers(parsed_dir)
                 print(f"  添加DOI: {stats['success']} 篇, 已有: {stats['already_has_doi']} 篇")
-            else:
-                print(f"{RED}无效编号{END}")
-        except ValueError:
-            print(f"{RED}输入无效{END}")
+        
+        elif ',' in choice:
+            # 多选批次
+            try:
+                indices = [int(x.strip()) - 1 for x in choice.split(',')]
+                valid_batches = []
+                for idx in indices:
+                    if 0 <= idx < len(batches):
+                        valid_batches.append(batches[idx])
+                    else:
+                        print(f"{YELLOW}警告: 编号 {idx+1} 无效，跳过{END}")
+                
+                if valid_batches:
+                    print(f"\n{CYAN}下载 {len(valid_batches)} 个批次...{END}\n")
+                    total_success = 0
+                    for i, batch in enumerate(valid_batches, 1):
+                        print(f"\n[{i}/{len(valid_batches)}] 批次: {batch['batch_id']}")
+                        result = processor.download_batch_parallel(batch['batch_id'], parsed_dir, max_workers=4)
+                        total_success += result.get("success_count", 0)
+                    
+                    if total_success > 0:
+                        print(f"\n{CYAN}自动添加DOI信息...{END}")
+                        stats = DOIExtractor.process_all_papers(parsed_dir)
+                        print(f"  添加DOI: {stats['success']} 篇, 已有: {stats['already_has_doi']} 篇")
+                else:
+                    print(f"{RED}没有有效的批次编号{END}")
+            except ValueError:
+                print(f"{RED}输入格式无效{END}")
+        
+        else:
+            # 单选批次
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(batches):
+                    batch_id = batches[idx]['batch_id']
+                    print(f"\n{CYAN}下载批次: {batch_id}{END}\n")
+                    
+                    # 使用并行下载
+                    result = processor.download_batch_parallel(batch_id, parsed_dir, max_workers=4)
+                    
+                    if result.get("success_count", 0) > 0:
+                        # 下载后自动添加DOI
+                        print(f"\n{CYAN}自动添加DOI信息...{END}")
+                        stats = DOIExtractor.process_all_papers(parsed_dir)
+                        print(f"  添加DOI: {stats['success']} 篇, 已有: {stats['already_has_doi']} 篇")
+                else:
+                    print(f"{RED}无效编号{END}")
+            except ValueError:
+                print(f"{RED}输入无效{END}")
     
     except Exception as e:
         print(f"{RED}错误: {e}{END}")
+        import traceback
+        traceback.print_exc()
     
     input(f"\n{GREEN}按回车返回...{END}")
 
@@ -493,8 +556,8 @@ def extract_batch():
         f"{'增量' if use_incremental else '全量重跑'}, "
         f"{'并行' if use_parallel else '串行'}){END}\n"
     )
-    # 使用新的 extract.py 脚本
-    cmd = [sys.executable, "scripts/extract.py", "batch", "--mode", mode]
+    # 使用新的 extract.py 脚本，--yes 跳过二次确认（menu已确认过）
+    cmd = [sys.executable, "scripts/extract.py", "batch", "--mode", mode, "--yes"]
     if not use_incremental:
         cmd.append("--force")
     if not use_parallel:

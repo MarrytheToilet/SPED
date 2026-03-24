@@ -352,7 +352,27 @@ class SkeletonFillMode(ExtractionMode):
         record_count = skeleton_data.get("record_count", 0)
         skeleton_records = skeleton_data.get("records", [])
         
-        self.logger.info(f"骨架提取完成: 识别 {record_count} 条记录")
+        # 诊断日志：检查数据完整性
+        paper_info = skeleton_data.get("paper_info", {})
+        application = paper_info.get("application", "未知")
+        actual_records_count = len(skeleton_records)
+        
+        self.logger.info(f"骨架提取完成: 识别 {record_count} 条记录, 实际records数组长度={actual_records_count}, application={application}")
+        
+        # 警告：record_count 与实际 records 数组长度不匹配
+        if record_count != actual_records_count:
+            self.logger.warning(
+                f"[{paper_id}] record_count({record_count}) != len(records)({actual_records_count}), "
+                f"可能导致数据丢失"
+            )
+        
+        # 诊断：如果 record_count 为 0，记录 skeleton_data 的结构
+        if record_count == 0:
+            self.logger.info(
+                f"[{paper_id}] record_count=0 诊断: "
+                f"skeleton_data keys={list(skeleton_data.keys())}, "
+                f"paper_info={paper_info}"
+            )
         
         if record_count == 0:
             return ExtractionResult(

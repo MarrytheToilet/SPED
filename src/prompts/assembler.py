@@ -68,10 +68,36 @@ class PromptAssembler:
         self._skeleton_template: str = ""
         self._chunk_fill_template: str = ""
         self._output_example: str = ""
+        self._complete_examples: str = ""
+        
+        # Schema生成器（延迟初始化）
+        self._schema_generator = None
+        self._schema_prompt_parts = None
         
         self._load_templates()
         
         self.logger.info(f"初始化完成: system={len(self._system_prompt)}, full={len(self._full_template)}, skeleton={len(self._skeleton_template)}, chunk_fill={len(self._chunk_fill_template)}")
+    
+    @property
+    def schema_generator(self):
+        """延迟初始化schema生成器"""
+        if self._schema_generator is None:
+            try:
+                from .schema_generator import SchemaPromptGenerator
+                self._schema_generator = SchemaPromptGenerator(self.schema_path)
+            except Exception as e:
+                self.logger.warning(f"Schema生成器初始化失败: {e}")
+        return self._schema_generator
+    
+    @property
+    def schema_prompt_parts(self):
+        """获取schema生成的prompt组件"""
+        if self._schema_prompt_parts is None and self.schema_generator:
+            try:
+                self._schema_prompt_parts = self.schema_generator.generate_all()
+            except Exception as e:
+                self.logger.warning(f"Schema prompt生成失败: {e}")
+        return self._schema_prompt_parts
     
     def _load_templates(self):
         """加载所有模板文件"""
@@ -112,6 +138,11 @@ class PromptAssembler:
         if example_path.exists():
             self._output_example = example_path.read_text(encoding="utf-8")
         
+        # 完整示例（新增）
+        complete_examples_path = self.template_dir / "examples" / "complete_examples.json"
+        if complete_examples_path.exists():
+            self._complete_examples = complete_examples_path.read_text(encoding="utf-8")
+        
         self.logger.debug(f"加载模板完成")
     
     def assemble_full_mode(
@@ -120,16 +151,36 @@ class PromptAssembler:
         paper_id: str = "unknown",
     ) -> AssembledPrompt:
         """
-        组装全量模式Prompt
+        组装全量模式Prompt（使用增强版）
         
-        system: 系统提示（规则+Schema）
-        user: 全量模式模板 + 论文内容
+        包含：
+        - 增强系统提示（带验证规则）
+        - 字段提取提示
+        - 完整输出示例
         """
-        # 构建user prompt
-        user_prompt = self._full_template.replace("{PAPER_CONTENT}", paper_text)
+        # 增强的system prompt
+        system_prompt = self.get_enhanced_system_prompt()
+        
+        # 准备提取提示内容
+        hints_content = ""
+        if self.schema_prompt_parts:
+            hints_content = "## 🔍 关键字段提取提示\n\n" + self.schema_prompt_parts.extraction_hints[:4000]
+        
+        # 准备输出示例内容
+        example_content = ""
+        if self._complete_examples:
+            example_content = "## 📎 完整输出示例\n\n以下是一个完整提取结果的参考示例：\n\n```json\n"
+            example_content += self._complete_examples[:6000]
+            example_content += "\n```"
+        
+        # 构建user prompt - 替换模板中的占位符
+        user_prompt = self._full_template
+        user_prompt = user_prompt.replace("{PAPER_CONTENT}", paper_text)
+        user_prompt = user_prompt.replace("{EXTRACTION_HINTS}", hints_content)
+        user_prompt = user_prompt.replace("{OUTPUT_EXAMPLE}", example_content)
         
         return AssembledPrompt(
-            system_prompt=self._system_prompt,
+            system_prompt=system_prompt,
             user_prompt=user_prompt,
             mode="full",
             metadata={
@@ -176,8 +227,7 @@ class PromptAssembler:
         """
         组装分块填充模式Prompt（两阶段第二阶段）
         
-        system: 简化的系统提示
-        user: 分块填充模板（包含骨架、Schema、chunk内容、ICL示例）
+        使用增强版系统提示 + 分块填充模板
         """
         # 构建骨架信息字符串
         records = skeleton_json.get("records", [])
@@ -204,8 +254,8 @@ class PromptAssembler:
         user_prompt = user_prompt.replace("{TOTAL_CHUNKS}", str(total_chunks))
         user_prompt = user_prompt.replace("{CHUNK_CONTENT}", chunk_text)
         
-        # 分块填充模式使用系统提示
-        system_prompt = self._system_prompt
+        # 使用增强版系统提示
+        system_prompt = self.get_enhanced_system_prompt()
         
         return AssembledPrompt(
             system_prompt=system_prompt,
@@ -267,3 +317,51 @@ class PromptAssembler:
 ---
 
 请从当前文本块中提取数据，填充到完整12表结构。"""
+
+    # ==================== 增强方法 ====================
+    
+    def get_enhanced_system_prompt(self) -> str:
+        """
+        获取增强版系统提示（包含schema生成的字段定义）
+        
+        组合：
+        1. 基础system_prompt.md
+        2. schema生成的验证规则
+        3. schema生成的字段定义
+        """
+        parts = [self._system_prompt]
+        
+        if self.schema_prompt_parts:
+            parts.append("\n\n---\n\n")
+            parts.append(self.schema_prompt_parts.validation_rules)
+        
+        return "".join(parts)
+    
+    def get_extraction_hints(self) -> str:
+        """获取字段提取提示"""
+        if self.schema_prompt_parts:
+            return self.schema_prompt_parts.extraction_hints
+        return ""
+    
+    def get_output_example(self, example_type: str = "complete") -> str:
+        """
+        获取输出示例
+        
+        Args:
+            example_type: "simple" 返回full_output.json, "complete" 返回complete_examples.json
+        """
+        if example_type == "complete" and self._complete_examples:
+            return self._complete_examples
+        return self._output_example
+    
+    def assemble_full_mode_enhanced(
+        self,
+        paper_text: str,
+        paper_id: str = "unknown",
+        include_hints: bool = True,
+        include_example: bool = True,
+    ) -> AssembledPrompt:
+        """
+        组装增强版全量模式Prompt（已合并到assemble_full_mode，此方法保留为别名）
+        """
+        return self.assemble_full_mode(paper_text, paper_id)
