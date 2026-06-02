@@ -28,6 +28,8 @@ class LLMResponse:
     provider: str = ""
     usage: Dict[str, int] = field(default_factory=dict)
     latency_ms: int = 0
+    finish_reason: str = ""
+    truncated: bool = False  # 因 max_tokens 截断或正文为空（reasoning 吃光预算）
     raw_response: Any = None
     
     def to_json(self) -> Dict[str, Any]:
@@ -40,6 +42,8 @@ class LLMResponse:
             "provider": self.provider,
             "usage": self.usage,
             "latency_ms": self.latency_ms,
+            "finish_reason": self.finish_reason,
+            "truncated": self.truncated,
         }
 
 
@@ -99,17 +103,8 @@ class LLMClient(ABC):
         pass
     
     def _report_to_rotator(self, success: bool, error: str = ""):
-        """向Key轮询器报告调用结果（用于健康检测）"""
-        try:
-            from .load_balancer import get_key_rotator
-            rotator = get_key_rotator(self.config.provider)
-            if success:
-                rotator.report_success(self.config.api_key)
-            else:
-                rotator.report_failure(self.config.api_key, error)
-        except Exception as e:
-            # 静默处理，不影响主流程
-            self.logger.debug(f"报告轮询器失败（可忽略）: {e}")
+        """保留占位（多Key负载均衡已移除，单端点无需上报）。"""
+        return
     
     def call(
         self,
@@ -133,6 +128,10 @@ class LLMClient(ABC):
         # 保存输入
         self._save_input(call_id, messages)
         
+        # 当前调用使用的输出 token 上限（截断/空正文时逐次抬高）
+        cur_max_tokens = int(kwargs.get("max_tokens", self.config.max_tokens) or self.config.max_tokens)
+        token_cap = int(getattr(self.config, "max_tokens_cap", 0) or 65536)
+
         # 重试循环
         last_error = ""
         for attempt in range(self.config.max_retries):
@@ -144,11 +143,15 @@ class LLMClient(ABC):
             try:
                 self.logger.debug(
                     f"调用LLM [{call_id}] 尝试 {attempt + 1}: "
-                    f"model={self.config.model}, provider={self.config.provider}"
+                    f"model={self.config.model}, provider={self.config.provider}, "
+                    f"max_tokens={cur_max_tokens}"
                 )
                 
+                call_kwargs = dict(kwargs)
+                call_kwargs["max_tokens"] = cur_max_tokens
+
                 start_time = time.time()
-                response = self._do_call(messages, **kwargs)
+                response = self._do_call(messages, **call_kwargs)
                 response.latency_ms = int((time.time() - start_time) * 1000)
                 
                 if response.success:
@@ -161,6 +164,10 @@ class LLMClient(ABC):
                 else:
                     last_error = response.error
                     self.logger.warning(f"调用失败: {response.error}")
+                    # 截断或正文为空：下次抬高 max_tokens 重试（reasoning 模型常见）
+                    if getattr(response, "truncated", False) and cur_max_tokens < token_cap:
+                        cur_max_tokens = min(int(cur_max_tokens * 2), token_cap)
+                        self.logger.info(f"检测到截断/空正文，提升 max_tokens 至 {cur_max_tokens} 后重试")
                     
             except Exception as e:
                 last_error = str(e)

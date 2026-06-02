@@ -98,12 +98,33 @@ class OpenAICompatibleClient(LLMClient):
             response = self.client.chat.completions.create(**request_kwargs)
             
             # 解析响应
-            content = response.choices[0].message.content
+            choice = response.choices[0]
+            content = choice.message.content or ""
+            finish_reason = getattr(choice, "finish_reason", "") or ""
             usage = {
                 "prompt_tokens": getattr(response.usage, "prompt_tokens", 0),
                 "completion_tokens": getattr(response.usage, "completion_tokens", 0),
                 "total_tokens": getattr(response.usage, "total_tokens", 0),
             }
+            # reasoning 模型：思考 token 可能吃光预算导致正文为空；或 finish_reason=length 截断
+            is_empty = not content.strip()
+            is_truncated = finish_reason == "length" or is_empty
+            if is_truncated:
+                reason = "正文为空(可能 reasoning 占满输出预算)" if is_empty else "输出被 max_tokens 截断"
+                self.logger.warning(
+                    f"{reason}: finish_reason={finish_reason}, "
+                    f"completion_tokens={usage['completion_tokens']}, max_tokens={request_kwargs['max_tokens']}"
+                )
+                return LLMResponse(
+                    success=False,
+                    error=f"输出不完整({reason})",
+                    model=self.config.model,
+                    provider=self.config.provider,
+                    usage=usage,
+                    finish_reason=finish_reason,
+                    truncated=True,
+                    raw_response=response,
+                )
             
             return LLMResponse(
                 success=True,
@@ -111,6 +132,7 @@ class OpenAICompatibleClient(LLMClient):
                 model=self.config.model,
                 provider=self.config.provider,
                 usage=usage,
+                finish_reason=finish_reason,
                 raw_response=response,
             )
             

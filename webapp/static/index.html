@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPED · 论文结构化数据提取</title>
+<style>
+  :root{--bg:#f5f7fb;--panel:#ffffff;--panel2:#f0f3f9;--bd:#e2e7f0;--fg:#1f2733;--mut:#6b7686;
+        --acc:#2f6bff;--ok:#1aa563;--warn:#c8930a;--err:#e0492f;--proc:#7d4ad6;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--fg);font-size:14px}
+  header{padding:13px 20px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:14px}
+  header h1{font-size:18px;margin:0}
+  header .sub{color:var(--mut);font-size:12px}
+  /* 全局进度横幅 */
+  #gbanner{display:none;background:var(--panel);border-bottom:1px solid var(--bd);padding:8px 20px}
+  #gbanner.show{display:block}
+  #gbanner .gtitle{font-size:12px;color:var(--mut);display:flex;justify-content:space-between;margin-bottom:5px}
+  #gbanner .gtitle b{color:var(--fg)}
+  .tabs{display:flex;gap:4px;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+  .tabs button{background:none;border:none;color:var(--mut);padding:11px 16px;cursor:pointer;font-size:14px;border-bottom:2px solid transparent}
+  .tabs button.active{color:var(--acc);border-bottom-color:var(--acc);font-weight:600}
+  main{padding:18px 20px;max-width:1320px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(20,40,80,.04)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button.btn{background:var(--acc);color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-size:13px}
+  button.btn:hover{filter:brightness(.96)}
+  button.btn.sec{background:var(--panel2);color:var(--fg);border:1px solid var(--bd)}
+  button.btn:disabled{opacity:.5;cursor:not-allowed}
+  input,textarea,select{background:#fff;border:1px solid var(--bd);color:var(--fg);border-radius:6px;padding:7px 9px;font-size:13px}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
+  textarea{width:100%;min-height:70px;resize:vertical}
+  label{color:var(--mut);font-size:12px;display:block;margin-bottom:4px}
+  .pill{padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+  .pill.unparsed{background:#eef1f6;color:#5a6678}
+  .pill.processing{background:rgba(125,74,214,.12);color:#7d4ad6}
+  .pill.parsed{background:rgba(26,165,99,.14);color:#138a52}
+  .pill.failed{background:rgba(224,73,47,.13);color:#c23a22}
+  .pill.too_large{background:rgba(200,147,10,.16);color:#9a720a}
+  .stat{display:flex;gap:14px;flex-wrap:wrap}
+  .stat .box{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:10px 16px;min-width:92px}
+  .stat .box b{font-size:22px;display:block}
+  .stat .box span{color:var(--mut);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--bd);vertical-align:top}
+  th{color:var(--mut);font-weight:600;position:sticky;top:0;background:var(--panel2)}
+  tr.disabled td{color:var(--mut);opacity:.7}
+  .tablewrap{max-height:60vh;overflow:auto;border:1px solid var(--bd);border-radius:8px}
+  .mut{color:var(--mut)}
+  .filterbar button{background:#fff;border:1px solid var(--bd);color:var(--mut);border-radius:20px;padding:5px 13px;cursor:pointer;font-size:12px}
+  .filterbar button.active{color:#fff;background:var(--acc);border-color:var(--acc)}
+  .prog{height:8px;background:var(--panel2);border:1px solid var(--bd);border-radius:6px;overflow:hidden}
+  .prog>div{height:100%;background:var(--acc);width:0;transition:width .4s}
+  .jobcard{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:11px;margin-bottom:9px}
+  .jst{font-weight:700;font-size:11px;padding:1px 8px;border-radius:12px}
+  .jst.running{background:rgba(47,107,255,.14);color:#2f6bff}
+  .jst.success{background:rgba(26,165,99,.14);color:#138a52}
+  .jst.failed{background:rgba(224,73,47,.13);color:#c23a22}
+  .jst.queued{background:#eef1f6;color:#5a6678}.jst.cancelled{background:#eef1f6;color:#5a6678}
+  .logbox{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:#3a4658;background:#f7f9fc;
+          border:1px solid var(--bd);border-radius:6px;padding:8px;max-height:160px;overflow:auto;margin-top:7px;white-space:pre-wrap}
+  .cell{cursor:help;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cell.null{color:#aab2bf}
+  #celltip{display:none;position:fixed;z-index:200;background:#fff;border:1px solid var(--acc);
+           border-radius:7px;padding:9px;width:340px;white-space:normal;box-shadow:0 8px 28px rgba(30,50,90,.18);
+           font-size:12px;color:var(--fg);pointer-events:none}
+  #celltip .lbl{color:var(--acc);font-size:11px;font-weight:700;margin-top:5px}
+  .vbadge{font-size:10px;padding:0 5px;border-radius:8px;margin-left:4px}
+  .vbadge.y{background:rgba(26,165,99,.16);color:#138a52}.vbadge.n{background:rgba(200,147,10,.16);color:#9a720a}
+  .selcount{color:var(--acc);font-weight:600}
+  .empty{color:var(--mut);text-align:center;padding:30px}
+  .field-chip{display:inline-block;background:var(--panel2);border:1px solid var(--bd);border-radius:6px;padding:3px 8px;margin:3px;font-size:12px}
+  .field-chip.fig{border-color:var(--proc);color:var(--proc)}
+  .setgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .setgrid .full{grid-column:1/-1}
+  @media(max-width:760px){.setgrid{grid-template-columns:1fr}}
+  a{color:var(--acc)}
+  .hint{background:#eef4ff;border:1px solid #d4e2ff;color:#33518c;border-radius:8px;padding:9px 12px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧪 SPED</h1><span class="sub">论文 PDF → 自动设计 schema（多智能体）→ 带证据的结构化数据</span>
+</header>
+
+<!-- 全局进度横幅 -->
+<div id="gbanner">
+  <div class="gtitle"><span><span class="jst running" id="gstatus">running</span> <b id="gtitle">—</b></span><span id="gmeta" class="mut"></span></div>
+  <div class="prog"><div id="gbar"></div></div>
+</div>
+
+<div class="tabs">
+  <button data-tab="parse" class="active">① 解析 PDF</button>
+  <button data-tab="design">② 设计/上传 Schema</button>
+  <button data-tab="extract">③ 提取数据</button>
+  <button data-tab="data">④ 查看数据</button>
+  <button data-tab="jobs">⚙ 任务</button>
+  <button data-tab="settings">🔧 设置</button>
+</div>
+<main>
+
+<!-- ① 解析 -->
+<section id="tab-parse">
+  <div class="card">
+    <div class="stat" id="pdfStats"></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="filterbar row" id="pdfFilter">
+        <button data-f="all" class="active">全部</button>
+        <button data-f="unparsed">未解析</button>
+        <button data-f="processing">处理中</button>
+        <button data-f="parsed">解析成功</button>
+        <button data-f="failed">解析失败</button>
+        <button data-f="too_large">超大(不可解析)</button>
+      </div>
+      <div class="row">
+        <span class="selcount" id="pdfSel">已选 0</span>
+        <button class="btn sec" onclick="pdfSelectAll(true)">全选(当前)</button>
+        <button class="btn sec" onclick="pdfSelectAll(false)">清空</button>
+        <button class="btn" id="parseBtn" onclick="startParse()">▶ 解析所选</button>
+        <button class="btn" onclick="parseAllUnparsed()">▶▶ 解析全部未解析</button>
+        <button class="btn sec" onclick="refreshPdfs()">⟳ 刷新</button>
+      </div>
+    </div>
+    <p class="mut" style="margin:8px 0 0">勾选未解析 / 解析失败的 PDF 后点击「解析所选」。失败的 PDF 可重新解析；
+      <strong id="sizeHint"></strong></p>
+    <div class="tablewrap" style="margin-top:10px">
+      <table><thead><tr>
+        <th style="width:30px"><input type="checkbox" onclick="pdfSelectAll(this.checked)"></th>
+        <th>文件名</th><th style="width:90px">大小</th><th style="width:130px">状态</th>
+      </tr></thead><tbody id="pdfBody"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- ② 设计 -->
+<section id="tab-design" hidden>
+  <div class="card">
+    <b style="display:block;margin-bottom:10px">方式 A：随机/分层读取论文，自动设计 Schema（多智能体）</b>
+    <div class="row" style="gap:18px;align-items:flex-start">
+      <div style="flex:1;min-width:260px">
+        <label>领域名称</label>
+        <input id="dDomain" style="width:100%" placeholder="例如：人工关节材料摩擦学">
+      </div>
+      <div style="width:120px"><label>字段下限</label><input id="dMin" type="number" value="20" style="width:100%"></div>
+      <div style="width:120px"><label>字段上限</label><input id="dMax" type="number" value="80" style="width:100%"></div>
+      <div style="width:140px"><label>采样篇数</label><input id="dSample" type="number" value="8" style="width:100%"></div>
+    </div>
+    <div style="margin-top:12px">
+      <label>领域简介 / 引导 Prompt（越具体，字段越准、空缺越少）</label>
+      <textarea id="dDesc" placeholder="描述这个领域关心哪些实体、属性、实验、指标……可换新领域快速迁移"></textarea>
+    </div>
+    <div class="row" style="margin-top:12px;justify-content:space-between">
+      <div class="row">
+        <label style="margin:0"><input type="checkbox" id="dRandom"> 随机挑选样本</label>
+        <span class="mut">勾选=在候选范围内<strong>随机</strong>抽样；不勾选=按论文体量分层采样。下方未选论文则范围=全部已解析论文。</span>
+      </div>
+      <button class="btn" onclick="startDesign()">🧠 多智能体设计 Schema</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <b>选择参与设计的论文（可不选）</b>
+      <span><span class="selcount" id="dPaperSel">已选 0</span>
+        <button class="btn sec" onclick="paperSelectAll('design',true)">全选</button>
+        <button class="btn sec" onclick="paperSelectAll('design',false)">清空</button></span>
+    </div>
+    <div class="tablewrap" style="margin-top:10px;max-height:300px">
+      <table><thead><tr><th style="width:30px"></th><th>paper_id</th><th style="width:100px">字符数</th></tr></thead>
+      <tbody id="dPaperBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- 方式B：直接上传 Schema -->
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <b>方式 B：直接上传 Schema（含提取引导）</b>
+      <span>
+        <button class="btn sec" onclick="fillSchemaTemplate()">填入模板</button>
+        <button class="btn sec" onclick="downloadSchemaTemplate()">下载模板</button>
+        <input type="file" id="uSchemaFile" accept=".json,application/json" style="display:none" onchange="loadSchemaFile(event)">
+        <button class="btn sec" onclick="document.getElementById('uSchemaFile').click()">选择 JSON 文件</button>
+      </span>
+    </div>
+    <p class="mut" style="margin:6px 0 8px">直接粘贴/上传符合规范的 schema。其中 <code>description</code>、<code>record_definition</code> 与每个字段的 <code>description/extraction_hint</code> 即作为提取引导（prompt）。<label style="margin-left:8px"><input type="checkbox" id="uOverwrite"> 允许覆盖同名</label></p>
+    <textarea id="uSchemaJson" style="width:100%;min-height:200px;font-family:monospace;font-size:12px" placeholder='{"domain":"...","description":"...","record_definition":"...","fields":[{"name":"...","type":"string","description":"..."}]}'></textarea>
+    <div class="row" style="justify-content:flex-end;margin-top:8px">
+      <button class="btn" onclick="uploadSchema()">⬆ 上传并保存 Schema</button>
+    </div>
+    <div id="uSchemaMsg" class="mut" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- ③ 提取 -->
+<section id="tab-extract" hidden>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <div><label>选择 Schema</label><select id="xSchema" style="min-width:260px"></select></div>
+      </div>
+      <div class="row">
+        <span class="selcount" id="xPaperSel">已选 0</span>
+        <button class="btn sec" onclick="paperSelectAll('extract',true)">全选</button>
+        <button class="btn sec" onclick="paperSelectAll('extract',false)">清空</button>
+        <button class="btn" onclick="startExtract()">▶ 开始提取所选</button>
+      </div>
+    </div>
+    <div id="xSchemaInfo" class="mut" style="margin-top:8px"></div>
+    <div class="tablewrap" style="margin-top:10px">
+      <table><thead><tr><th style="width:30px"></th><th>paper_id</th><th style="width:100px">字符数</th><th style="width:120px">提取状态</th></tr></thead>
+      <tbody id="xPaperBody"></tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- ④ 数据 -->
+<section id="tab-data" hidden>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row"><div><label>按 Schema 查看</label><select id="vSchema" style="min-width:260px"></select></div></div>
+      <div class="row"><span class="mut" id="vCount"></span>
+        <button class="btn sec" onclick="loadData()">⟳ 刷新</button>
+        <button class="btn sec" onclick="exportData('csv')">⬇ 导出 CSV（数值）</button>
+        <button class="btn sec" onclick="exportData('json')">⬇ 导出 JSON（含证据）</button></div>
+    </div>
+    <p class="mut" style="margin:8px 0 0">悬浮任意单元格可查看<strong>原文证据</strong>与<strong>来源论文</strong>；✓=证据已核验。</p>
+  </div>
+  <div class="card" style="overflow:auto">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <div class="row" style="gap:6px">
+        <button class="btn sec" id="pgPrev" onclick="pageMove(-1)">‹ 上一页</button>
+        <span class="mut" id="pgInfo"></span>
+        <button class="btn sec" id="pgNext" onclick="pageMove(1)">下一页 ›</button>
+      </div>
+      <div><label class="mut" style="font-size:12px">每页</label>
+        <select id="pgSize" onchange="loadData()" style="width:auto">
+          <option>50</option><option selected>100</option><option>200</option><option>500</option></select></div>
+    </div>
+    <div class="tablewrap" style="max-height:68vh"><table id="dataTable"></table></div>
+  </div>
+</section>
+
+<!-- ⚙ 任务 -->
+<section id="tab-jobs" hidden>
+  <div class="card"><b>后台任务</b><div id="jobList" style="margin-top:10px"></div></div>
+</section>
+
+<!-- 🔧 设置 -->
+<section id="tab-settings" hidden>
+  <div class="hint" style="margin-bottom:14px">在此配置各 API 端点。API Key 留空表示「不修改」。有任务运行时无法保存。修改后立即对新任务生效。</div>
+  <div class="card">
+    <b>MinerU（PDF 解析）</b>
+    <div class="setgrid" style="margin-top:10px">
+      <div class="full"><label>API Base</label><input id="sMineruBase" style="width:100%" placeholder="https://mineru.net/api/v4"></div>
+      <div class="full"><label>Token（留空不改）<span id="sMineruTokMask" class="mut"></span></label><input id="sMineruToken" type="password" style="width:100%" placeholder="••••••"></div>
+    </div>
+  </div>
+  <div class="card">
+    <b>基础 LLM（未单独配置角色时回退到此）</b>
+    <div class="setgrid" style="margin-top:10px">
+      <div><label>Model</label><input id="sLlmModel" style="width:100%" placeholder="deepseek-v4-flash"></div>
+      <div><label>API Base</label><input id="sLlmBase" style="width:100%" placeholder="https://api.deepseek.com/v1"></div>
+      <div><label>API Key（留空不改）<span id="sLlmKeyMask" class="mut"></span></label><input id="sLlmKey" type="password" style="width:100%" placeholder="••••••"></div>
+    </div>
+  </div>
+  <div class="card">
+    <b>多智能体角色端点</b>
+    <p class="mut" style="margin:6px 0 10px">留空则继承上方基础 LLM。建议不同家族模型分担 proposer，提升 schema 多样性。</p>
+    <div id="agentRows"></div>
+  </div>
+  <div class="card">
+    <b>性能 / 限额</b>
+    <div class="setgrid" style="margin-top:10px">
+      <div><label>提取并发数（同时处理几篇，1–32）</label><input id="sExtractConc" type="number" min="1" max="32" style="width:100%" placeholder="8"></div>
+    </div>
+    <p class="mut" style="margin:6px 0 0">并发越高越快，但更易触发 LLM 速率限制；DeepSeek 建议 8–16。</p>
+  </div>
+  <div class="row" style="justify-content:flex-end">
+    <button class="btn sec" onclick="loadSettings()">↺ 重置</button>
+    <button class="btn" onclick="saveSettings()">💾 保存设置</button>
+  </div>
+</section>
+
+</main>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let pdfData={items:[],counts:{}}, pdfFilter='all', pdfSelected=new Set();
+let parsedPapers=[], paperSel={design:new Set(),extract:new Set()};
+let schemas=[], settingsData=null;
+const CATNAME={unparsed:'未解析',processing:'处理中',parsed:'解析成功',failed:'解析失败',too_large:'超大·不可解析'};
+
+// tabs
+$$('.tabs button').forEach(b=>b.onclick=()=>{
+  $$('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  ['parse','design','extract','data','jobs','settings'].forEach(t=>$('#tab-'+t).hidden=(t!==b.dataset.tab));
+  if(b.dataset.tab==='design'||b.dataset.tab==='extract')loadParsed();
+  if(b.dataset.tab==='extract'||b.dataset.tab==='data')loadSchemas();
+  if(b.dataset.tab==='data')loadData();
+  if(b.dataset.tab==='jobs')loadJobs();
+  if(b.dataset.tab==='settings')loadSettings();
+});
+
+async function api(url,opt){const r=await fetch(url,opt);if(!r.ok){let d='';try{d=(await r.json()).detail}catch(e){}throw new Error(d||r.statusText)}return r.json()}
+
+// ---- ① PDFs ----
+async function refreshPdfs(){pdfData=await api('/api/pdfs');renderPdfStats();renderPdfs();
+  $('#sizeHint').textContent='超过 '+(pdfData.max_pdf_size_mb||20)+'MB 的 PDF 标记为「超大」，不可上传解析。'}
+function renderPdfStats(){const c=pdfData.counts;
+  $('#pdfStats').innerHTML=[['总计',pdfData.total,''],['未解析',c.unparsed,'unparsed'],
+    ['处理中',c.processing,'processing'],['解析成功',c.parsed,'parsed'],['解析失败',c.failed,'failed'],
+    ['超大',c.too_large,'too_large']]
+    .map(([k,v])=>`<div class="box"><b>${v||0}</b><span>${k}</span></div>`).join('')}
+$('#pdfFilter').onclick=e=>{if(e.target.dataset.f){pdfFilter=e.target.dataset.f;
+  $$('#pdfFilter button').forEach(x=>x.classList.toggle('active',x===e.target));renderPdfs()}}
+function visiblePdfs(){return pdfData.items.filter(i=>pdfFilter==='all'||i.category===pdfFilter)}
+function selectablePdf(i){return i.category==='unparsed'||i.category==='failed'}
+function renderPdfs(){const rows=visiblePdfs();
+  $('#pdfBody').innerHTML=rows.length?rows.map(i=>{const dis=!selectablePdf(i);return `<tr class="${dis?'disabled':''}">
+    <td><input type="checkbox" ${dis?'disabled':''} ${pdfSelected.has(i.filename)?'checked':''} onclick="togglePdf('${esc(i.filename)}',this.checked)"></td>
+    <td>${esc(i.filename)}</td><td class="mut">${i.size_mb} MB</td>
+    <td><span class="pill ${i.category}">${CATNAME[i.category]}</span></td>
+  </tr>`}).join(''):'<tr><td colspan=4 class="empty">无</td></tr>';updatePdfSel()}
+function esc(s){return (s+'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+function togglePdf(n,c){c?pdfSelected.add(n):pdfSelected.delete(n);updatePdfSel()}
+function pdfSelectAll(on){visiblePdfs().forEach(i=>{if(selectablePdf(i))on?pdfSelected.add(i.filename):pdfSelected.delete(i.filename)});renderPdfs()}
+function updatePdfSel(){$('#pdfSel').textContent='已选 '+pdfSelected.size}
+async function startParse(){if(!pdfSelected.size)return alert('请先勾选可解析的 PDF（未解析/解析失败）');
+  const r=await api('/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({filenames:[...pdfSelected]})});
+  alert('已提交解析任务：'+r.count+' 个 PDF\n任务ID '+r.job_id);pdfSelected.clear();gotoJobs()}
+async function parseAllUnparsed(){const n=pdfData.counts.unparsed||0;
+  if(!n)return alert('没有未解析的 PDF');
+  if(!confirm('将解析全部 '+n+' 个未解析 PDF（限速 50 文件/分钟），会消耗 MinerU 额度，确认？'))return;
+  const r=await api('/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({all_unparsed:true})});
+  alert('已提交解析任务：'+r.count+' 个 PDF\n任务ID '+r.job_id);gotoJobs()}
+
+// ---- parsed papers ----
+async function loadParsed(){const r=await api('/api/parsed');parsedPapers=r.papers;renderPapers('design');renderPapers('extract')}
+function renderPapers(which){const body=$('#'+(which==='design'?'dPaperBody':'xPaperBody'));
+  body.innerHTML=parsedPapers.length?parsedPapers.map(p=>`<tr>
+    <td><input type="checkbox" ${paperSel[which].has(p.paper_id)?'checked':''} onclick="togglePaper('${which}','${esc(p.paper_id)}',this.checked)"></td>
+    <td>${esc(p.paper_id)}</td><td class="mut">${p.char_count||0}</td>
+    ${which==='extract'?`<td><span class="pill ${p.extract_status==='done'?'parsed':'unparsed'}">${p.extract_status==='done'?('已提取·'+p.extract_count):'未提取'}</span></td>`:''}
+  </tr>`).join(''):`<tr><td colspan=${which==='extract'?4:3} class="empty">暂无已解析论文</td></tr>`;
+  updatePaperSel(which)}
+function togglePaper(w,id,c){c?paperSel[w].add(id):paperSel[w].delete(id);updatePaperSel(w)}
+function paperSelectAll(w,on){parsedPapers.forEach(p=>on?paperSel[w].add(p.paper_id):paperSel[w].delete(p.paper_id));renderPapers(w)}
+function updatePaperSel(w){$('#'+(w==='design'?'dPaperSel':'xPaperSel')).textContent='已选 '+paperSel[w].size}
+
+// ---- ② design ----
+async function startDesign(){const domain=$('#dDomain').value.trim();if(!domain)return alert('请填写领域名称');
+  const body={domain,description:$('#dDesc').value.trim(),
+    min_fields:+$('#dMin').value,max_fields:+$('#dMax').value,sample_size:+$('#dSample').value,
+    random_pick:$('#dRandom').checked,paper_ids:paperSel.design.size?[...paperSel.design]:null};
+  const r=await api('/api/schema/design',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  alert('已提交设计任务：'+r.job_id);gotoJobs()}
+
+// ---- ②B 直接上传 schema ----
+const SCHEMA_TEMPLATE={domain:"人工关节材料摩擦学",description:"关注人工关节材料体系、表面处理、力学性能、摩擦磨损实验条件与结果、表征观测等。",
+  record_definition:"一种材料在一组摩擦磨损实验条件下的一次测试结果",
+  fields:[
+    {name:"material_composition",type:"string",description:"材料体系/成分，如 Ti6Al4V、CoCrMo、UHMWPE",extraction_hint:"见材料与方法/Table"},
+    {name:"surface_treatment",type:"string",description:"表面处理或涂层"},
+    {name:"hardness",type:"number",unit:"HV",description:"硬度"},
+    {name:"load",type:"number",unit:"N",description:"实验载荷"},
+    {name:"friction_coefficient",type:"number",description:"摩擦系数"},
+    {name:"wear_rate",type:"number",unit:"mm^3/Nm",description:"磨损率"},
+    {name:"wear_morphology",type:"string",description:"磨痕/表面形貌（来自SEM等）",from_figure:true,extraction_hint:"图注 Fig."}
+  ]};
+function fillSchemaTemplate(){$('#uSchemaJson').value=JSON.stringify(SCHEMA_TEMPLATE,null,2)}
+function downloadSchemaTemplate(){const blob=new Blob([JSON.stringify(SCHEMA_TEMPLATE,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='schema_template.json';a.click();URL.revokeObjectURL(a.href)}
+function loadSchemaFile(ev){const f=ev.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{$('#uSchemaJson').value=rd.result};rd.readAsText(f);ev.target.value=''}
+async function uploadSchema(){const txt=$('#uSchemaJson').value.trim();if(!txt)return alert('请粘贴或选择 schema JSON');
+  let obj;try{obj=JSON.parse(txt)}catch(e){return alert('JSON 解析失败：'+e.message)}
+  const msg=$('#uSchemaMsg');msg.textContent='上传中…';
+  try{
+    const r=await api('/api/schema/upload',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({schema_def:obj,overwrite:$('#uOverwrite').checked})});
+    msg.innerHTML='✅ 已保存 schema「'+esc(r.slug)+'」，共 '+r.fields+' 字段。'+
+      (r.warnings&&r.warnings.length?'<br><span style="color:#b26b00">提示：'+r.warnings.map(esc).join('；')+'</span>':'');
+    loadSchemas();
+  }catch(e){msg.innerHTML='<span style="color:#c0392b">❌ '+esc(e.message||'上传失败')+'</span>'}}
+
+// ---- schemas ----
+async function loadSchemas(){const r=await api('/api/schemas');schemas=r.schemas;
+  const opt=schemas.map(s=>`<option value="${esc(s.slug)}">${esc(s.slug)} · ${s.fields}字段</option>`).join('');
+  $('#xSchema').innerHTML=opt||'<option value="">（无，请先设计）</option>';
+  $('#vSchema').innerHTML='<option value="">全部</option>'+opt;
+  renderSchemaInfo()}
+$('#xSchema')&&($('#xSchema').onchange=renderSchemaInfo);
+function renderSchemaInfo(){const s=schemas.find(x=>x.slug===$('#xSchema').value);
+  if(!s){$('#xSchemaInfo').innerHTML='';return}
+  $('#xSchemaInfo').innerHTML=`<div>记录定义：${esc(s.record_definition||'')}</div>`+
+    s.field_list.map(f=>`<span class="field-chip ${f.from_figure?'fig':''}">${esc(f.name)}${f.unit?' ['+esc(f.unit)+']':''}</span>`).join('')}
+
+// ---- ③ extract ----
+async function startExtract(){const slug=$('#xSchema').value;if(!slug)return alert('请选择 schema');
+  if(!paperSel.extract.size)return alert('请勾选论文');
+  const r=await api('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({slug,paper_ids:[...paperSel.extract]})});
+  alert('已提交提取任务：'+r.count+' 篇\n任务ID '+r.job_id);gotoJobs()}
+
+// ---- ④ data ----
+$('#vSchema')&&($('#vSchema').onchange=()=>loadData(0));
+let DATA={rows:[],cols:[],total:0,offset:0,limit:100,slug:''};
+async function loadData(offset){
+  if(offset===undefined)offset=0;
+  const slug=$('#vSchema').value;
+  const limit=parseInt($('#pgSize').value)||100;
+  const d=await api('/api/data?'+new URLSearchParams({slug:slug||'',offset:offset,limit:limit}));
+  DATA={rows:d.rows,cols:d.columns,total:d.count,offset:d.offset,limit:d.limit,slug:slug};
+  $('#vCount').textContent=d.count+' 条记录';
+  renderData();renderPager();}
+function renderData(){
+  const cols=DATA.cols,t=$('#dataTable');
+  if(!DATA.rows.length){t.innerHTML='<tr><td class="empty">暂无数据（先完成提取）</td></tr>';return}
+  let h='<thead><tr><th>来源论文</th>'+cols.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
+  for(let ri=0;ri<DATA.rows.length;ri++){const r=DATA.rows[ri];
+    h+='<tr><td class="mut">'+esc(r._paper_id)+'</td>';
+    for(let ci=0;ci<cols.length;ci++){const f=r.fields[cols[ci]]||{};const v=f.value;
+      const isNull=(v==null||v==='');
+      const disp=isNull?'—':(typeof v==='object'?JSON.stringify(v):String(v));
+      const vb=f.verified===true?'<span class="vbadge y">✓</span>':(f.verified===false?'<span class="vbadge n">?</span>':'');
+      h+='<td><div class="cell'+(isNull?' null':'')+'" data-r="'+ri+'" data-c="'+ci+'">'+esc(disp)+vb+'</div></td>';}
+    h+='</tr>';}
+  t.innerHTML=h+'</tbody>';}
+function renderPager(){const from=DATA.total?DATA.offset+1:0,to=Math.min(DATA.offset+DATA.limit,DATA.total);
+  $('#pgInfo').textContent=`${from}–${to} / ${DATA.total}`;
+  $('#pgPrev').disabled=DATA.offset<=0;$('#pgNext').disabled=to>=DATA.total;}
+function pageMove(dir){const next=DATA.offset+dir*DATA.limit;
+  if(next<0||next>=DATA.total)return;loadData(next);}
+function exportData(fmt){const slug=$('#vSchema').value;
+  window.open('/api/data/export?'+new URLSearchParams({slug:slug||'',fmt:fmt}),'_blank');}
+// 单个共享浮动提示框，避免给每个单元格都建 DOM（数千行时会极卡）
+(function(){const tip=document.createElement('div');tip.id='celltip';document.body.appendChild(tip);
+  const tbl=$('#dataTable');if(!tbl)return;
+  tbl.addEventListener('mouseover',e=>{const c=e.target.closest('.cell');if(!c||c.dataset.r===undefined)return;
+    const r=DATA.rows[+c.dataset.r];if(!r)return;const f=r.fields[DATA.cols[+c.dataset.c]]||{};
+    const v=f.value;const disp=(v==null||v==='')?'—':(typeof v==='object'?JSON.stringify(v):String(v));
+    const vb=f.verified===true?'<span class="vbadge y">✓</span>':(f.verified===false?'<span class="vbadge n">?</span>':'');
+    tip.innerHTML=`<div><b>${esc(disp)}</b>${vb}</div><div class="lbl">证据</div>
+      <div>${f.evidence?esc(f.evidence):'<span class=mut>无</span>'}</div>
+      <div class="lbl">来源</div><div>${esc(r._paper_id)}</div>`;
+    tip.style.display='block';});
+  tbl.addEventListener('mousemove',e=>{if(tip.style.display!=='block')return;
+    let x=e.clientX+14,y=e.clientY+14;
+    if(x+360>innerWidth)x=e.clientX-354;if(y+200>innerHeight)y=Math.max(8,e.clientY-200);
+    tip.style.left=x+'px';tip.style.top=y+'px';});
+  tbl.addEventListener('mouseout',e=>{if(e.target.closest('.cell'))tip.style.display='none';});
+})();
+
+// ---- ⚙ jobs ----
+function gotoJobs(){$$('.tabs button').find(b=>b.dataset.tab==='jobs').click()}
+async function loadJobs(){const r=await api('/api/jobs');
+  $('#jobList').innerHTML=r.jobs.length?r.jobs.map(j=>{
+    const pct=j.total?Math.round(j.done/j.total*100):(j.status==='success'?100:0);
+    const m=j.meta||{};const mi=Object.entries(m).map(([k,v])=>k+'='+v).join(' ');
+    return `<div class="jobcard"><div class="row" style="justify-content:space-between">
+      <div><span class="jst ${j.status}">${j.status}</span> <b>${esc(j.title)}</b></div>
+      <div class="mut">${j.done}/${j.total} ${j.status==='running'?'<a href="#" onclick="cancelJob(\''+j.id+'\');return false">取消</a>':''}</div></div>
+      <div class="prog" style="margin-top:7px"><div style="width:${pct}%"></div></div>
+      <div class="mut" style="margin-top:5px;font-size:12px">${esc(j.last_log||'')} ${mi?'· '+esc(mi):''}
+        ${j.error?'<span style="color:var(--err)">'+esc(j.error)+'</span>':''}
+        ${j.result&&j.result.slug?'· schema='+esc(j.result.slug):''}</div>
+      <details style="margin-top:5px"><summary class="mut" style="cursor:pointer;font-size:12px">日志</summary>
+        <div class="logbox" id="log-${j.id}">加载中…</div></details></div>`}).join(''):'<div class="empty">暂无任务</div>'}
+async function cancelJob(id){await api('/api/jobs/'+id+'/cancel',{method:'POST'});loadJobs()}
+document.addEventListener('toggle',async e=>{if(e.target.tagName==='DETAILS'&&e.target.open){
+  const box=e.target.querySelector('.logbox');if(box){const id=box.id.slice(4);
+    const j=await api('/api/jobs/'+id);box.textContent=(j.logs||[]).join('\n')}}},true);
+
+// ---- 🔧 settings ----
+async function loadSettings(){settingsData=await api('/api/settings');const d=settingsData;
+  $('#sMineruBase').value=d.mineru.api_base||'';
+  $('#sMineruToken').value='';$('#sMineruTokMask').textContent=d.mineru.token_set?(' 当前 '+d.mineru.token_masked):' （未设置）';
+  $('#sLlmModel').value=d.llm.model||'';$('#sLlmBase').value=d.llm.api_base||'';
+  $('#sLlmKey').value='';$('#sLlmKeyMask').textContent=d.llm.api_key_set?(' 当前 '+d.llm.api_key_masked):' （未设置）';
+  $('#agentRows').innerHTML=d.agents.map(a=>`<div class="card" style="background:var(--panel2);padding:11px;margin-bottom:9px">
+    <b style="font-size:13px">${esc(a.role)}</b>
+    <div class="setgrid" style="margin-top:8px">
+      <div><label>Model</label><input data-r="${esc(a.role)}" data-k="model" style="width:100%" value="${esc(a.model||'')}" placeholder="继承基础"></div>
+      <div><label>API Base</label><input data-r="${esc(a.role)}" data-k="api_base" style="width:100%" value="${esc(a.api_base||'')}" placeholder="继承基础"></div>
+      <div><label>API Key${a.api_key_set?(' 当前 '+esc(a.api_key_masked)):''}</label><input data-r="${esc(a.role)}" data-k="api_key" type="password" style="width:100%" placeholder="${a.api_key_set?'留空不改':'继承基础'}"></div>
+    </div></div>`).join('');
+  $('#sExtractConc').value=(d.limits&&d.limits.extract_concurrency)||8}
+async function saveSettings(){
+  const payload={mineru:{api_base:$('#sMineruBase').value.trim()},
+    llm:{model:$('#sLlmModel').value.trim(),api_base:$('#sLlmBase').value.trim()},agents:[],
+    limits:{extract_concurrency:+$('#sExtractConc').value||8}};
+  if($('#sMineruToken').value.trim())payload.mineru.token=$('#sMineruToken').value.trim();
+  if($('#sLlmKey').value.trim())payload.llm.api_key=$('#sLlmKey').value.trim();
+  const byRole={};
+  $$('#agentRows input').forEach(inp=>{const r=inp.dataset.r,k=inp.dataset.k,v=inp.value.trim();
+    byRole[r]=byRole[r]||{role:r};
+    if(k==='api_key'){if(v)byRole[r].api_key=v}else{byRole[r][k]=v}});
+  payload.agents=Object.values(byRole);
+  try{await api('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    alert('设置已保存（对新任务生效）');loadSettings()}
+  catch(e){alert('保存失败：'+e.message)}}
+
+// ---- 全局进度横幅 + 轮询 ----
+async function pollGlobal(){try{const r=await api('/api/jobs');
+  const act=(r.active||[]).find(j=>j.status==='running')||(r.active||[])[0];
+  const b=$('#gbanner');
+  if(act){b.classList.add('show');
+    const pct=act.total?Math.round(act.done/act.total*100):0;
+    $('#gstatus').textContent=act.status;$('#gstatus').className='jst '+act.status;
+    $('#gtitle').textContent=act.title;
+    $('#gbar').style.width=pct+'%';
+    const m=act.meta||{};const mi=Object.entries(m).map(([k,v])=>k+'='+v).join(' ');
+    $('#gmeta').textContent=act.done+'/'+act.total+(mi?(' · '+mi):'')}
+  else{b.classList.remove('show')}
+  if(!$('#tab-jobs').hidden)loadJobs();
+}catch(e){}}
+setInterval(pollGlobal,3000);pollGlobal();
+refreshPdfs();loadSchemas();
+</script>
+</body>
+</html>

@@ -60,7 +60,16 @@ class PDFProcessor:
         
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        # 快照 MinerU 端点配置：在任务期间保持一致，避免设置热更新打断进行中的解析。
+        # 新建实例（即新任务）会读取最新 settings。
+        import settings as _st
+        self.api_base = _st.MINERU_API_BASE
+        self.headers = dict(_st.MINERU_HEADERS)
+        self.upload_rate_per_min = getattr(_st, "MINERU_UPLOAD_RATE_PER_MIN", 50)
         self._init_db()
+        # 统一论文目录（与本状态库共库），串联解析/提取/入库状态
+        from src.database.catalog import PaperCatalog
+        self.catalog = PaperCatalog(self.db_path)
     
     def _init_db(self):
         """初始化状态数据库"""
@@ -112,7 +121,17 @@ class PDFProcessor:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_hash ON pdf_files(file_hash)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_status ON pdf_files(status)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_batch_status ON batches(status)")
-        
+
+        # 下载记录唯一约束：保证 INSERT OR REPLACE 按 (batch_id, data_id) 幂等
+        try:
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_dl_unique "
+                "ON download_records(batch_id, data_id)"
+            )
+        except sqlite3.IntegrityError:
+            # 历史数据存在重复时跳过（不影响新逻辑）
+            pass
+
         conn.commit()
         conn.close()
     
@@ -181,15 +200,18 @@ class PDFProcessor:
         print(f"\n📊 统计: 新增 {len(new_pdfs)}/{len(all_pdfs)} 个PDF")
         return new_pdfs
 
-    def build_upload_batches(self, pdfs: List[Path]) -> List[List[Path]]:
+    def build_upload_batches(self, pdfs: List[Path], max_files: int = None) -> List[List[Path]]:
         """
         按“文件数 + 总体积”双约束生成更均衡的上传批次。
         使用 first-fit decreasing，优先把大文件分散到不同批次，减少单批超时风险。
+        max_files: 单批文件数上限（默认 BATCH_SIZE）；同时受 MinerU 速率上限约束，
+        确保单批不超过 50 文件/分钟限制。
         """
         if not pdfs:
             return []
 
-        max_files_per_batch = max(1, BATCH_SIZE)
+        cap = max_files if max_files else BATCH_SIZE
+        max_files_per_batch = max(1, min(BATCH_SIZE, cap, self.upload_rate_per_min))
         max_batch_size_bytes = max(1, BATCH_MAX_TOTAL_MB) * 1024 * 1024
 
         size_pairs: List[tuple[Path, int]] = []
@@ -244,6 +266,10 @@ class PDFProcessor:
         if not pdfs:
             print("⚠️ 没有PDF文件需要上传")
             return None
+
+        if len(pdfs) > self.upload_rate_per_min:
+            print(f"⚠️ 单批 {len(pdfs)} 文件超过速率上限 {self.upload_rate_per_min}/min，已截断")
+            pdfs = pdfs[: self.upload_rate_per_min]
         
         print(f"\n🚀 上传批次 {batch_index + 1}：{len(pdfs)} 个文件")
         
@@ -265,14 +291,17 @@ class PDFProcessor:
                 **FILE_CONFIG
             })
         
-        # 申请上传URL（带重试）
+        # 申请上传URL（带重试）。429 速率限制单独计数，不消耗常规重试预算。
         try:
             result = None
-            for attempt in range(max(1, UPLOAD_RETRY)):
+            attempt = 0
+            rate_waits = 0
+            max_rate_waits = 10
+            while attempt < max(1, UPLOAD_RETRY):
                 try:
                     response = requests.post(
-                        f"{MINERU_API_BASE}/file-urls/batch",
-                        headers=MINERU_HEADERS,
+                        f"{self.api_base}/file-urls/batch",
+                        headers=self.headers,
                         json={
                             **UPLOAD_CONFIG,
                             "files": files_data,
@@ -285,6 +314,18 @@ class PDFProcessor:
                             result = candidate
                             break
                         print(f"⚠️ 申请上传URL失败：{candidate.get('msg', '未知错误')}")
+                    elif response.status_code == 429:
+                        # 触发 MinerU 速率限制：尊重 Retry-After，否则退避一整分钟。
+                        # 不计入 attempt，仅受 max_rate_waits 上限保护，避免被偶发限速饿死批次。
+                        if rate_waits >= max_rate_waits:
+                            print("❌ 速率限制持续过久，放弃该批次")
+                            break
+                        rate_waits += 1
+                        ra = response.headers.get("Retry-After")
+                        wait = int(ra) if (ra and ra.isdigit()) else 65
+                        print(f"⚠️ 命中速率限制(429)，等待 {wait} 秒后重试...({rate_waits}/{max_rate_waits})")
+                        time.sleep(wait)
+                        continue
                     else:
                         print(f"⚠️ 申请上传URL失败：HTTP {response.status_code}")
                         if response.text:
@@ -292,8 +333,9 @@ class PDFProcessor:
                 except Exception as e:
                     print(f"⚠️ 申请上传URL异常：{str(e)[:120]}")
 
-                if attempt < max(1, UPLOAD_RETRY) - 1:
-                    delay = min(UPLOAD_RETRY_BACKOFF_MAX, UPLOAD_RETRY_BACKOFF_BASE ** (attempt + 1))
+                attempt += 1
+                if attempt < max(1, UPLOAD_RETRY):
+                    delay = min(UPLOAD_RETRY_BACKOFF_MAX, UPLOAD_RETRY_BACKOFF_BASE ** attempt)
                     print(f"  ⏳ 等待 {delay} 秒后重试...")
                     time.sleep(delay)
 
@@ -379,10 +421,10 @@ class PDFProcessor:
         """
         print(f"\n🔍 查询批次: {batch_id}")
         
-        url = f"{MINERU_API_BASE}/extract-results/batch/{batch_id}"
+        url = f"{self.api_base}/extract-results/batch/{batch_id}"
         
         try:
-            response = requests.get(url, headers=MINERU_HEADERS, timeout=HTTP_REQUEST_TIMEOUT)
+            response = requests.get(url, headers=self.headers, timeout=HTTP_REQUEST_TIMEOUT)
             
             if response.status_code != 200:
                 print(f"❌ 查询失败：HTTP {response.status_code}")
@@ -494,7 +536,7 @@ class PDFProcessor:
                 skipped_count += 1
                 continue
             
-            # 检查是否已下载
+            # 检查是否已下载（并校验解析结果有效，避免把坏结果当成功跳过）
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
             cur.execute("""
@@ -503,55 +545,38 @@ class PDFProcessor:
             """, (batch_id, data_id))
             existing = cur.fetchone()
             conn.close()
-            
+
             if existing and Path(existing[0]).exists():
-                print(f"  ✅ 已下载: {existing[0]}")
-                success_count += 1
-                continue
-            
-            # 生成安全的目录名
-            safe_name = "".join(c if c.isalnum() or c in "._- " else "_" 
-                              for c in Path(filename).stem)
-            
-            paper_dir = output_dir / safe_name
-            paper_dir.mkdir(parents=True, exist_ok=True)
-            
-            zip_path = paper_dir / "mineru_output.zip"
-            
-            # 下载ZIP
-            print(f"  ⬇️ 下载中...")
-            if self._download_file(zip_url, zip_path):
-                print(f"  📦 解压中...")
-                if self._unzip_file(zip_path, paper_dir):
-                    print(f"  ✅ 完成: {paper_dir}")
-                    
-                    # 删除ZIP节省空间
-                    zip_path.unlink()
-                    
-                    # 记录下载成功
-                    conn = sqlite3.connect(self.db_path)
-                    conn.execute("""
-                        INSERT OR REPLACE INTO download_records
-                        (batch_id, data_id, filename, output_path, download_status)
-                        VALUES (?, ?, ?, ?, 'completed')
-                    """, (batch_id, data_id, filename, str(paper_dir)))
-                    
-                    # 更新PDF状态
-                    conn.execute("""
-                        UPDATE pdf_files
-                        SET status = 'downloaded', updated_at = CURRENT_TIMESTAMP
-                        WHERE filename = ?
-                    """, (filename,))
-                    
-                    conn.commit()
-                    conn.close()
-                    
+                ok, char_count = self._validate_parsed_dir(existing[0])
+                if ok:
+                    print(f"  ✅ 已下载: {existing[0]}")
+                    # 确保统一目录同步（幂等）
+                    self.catalog.mark_parsed(
+                        paper_id=Path(existing[0]).name,
+                        parsed_dir=existing[0],
+                        char_count=char_count,
+                        batch_id=batch_id,
+                        mineru_data_id=data_id,
+                        source_pdf=filename,
+                    )
                     success_count += 1
-                else:
-                    print(f"  ❌ 解压失败")
-                    failed_count += 1
+                    continue
+                print(f"  ♻️  已有结果无效，重新下载")
+
+            # 下载 + 安全解压 + 校验 + 记账
+            print(f"  ⬇️ 下载并解析中...")
+            result = self._download_and_extract(
+                batch_id=batch_id,
+                data_id=data_id,
+                filename=filename,
+                zip_url=zip_url,
+                output_dir=output_dir,
+            )
+            if result["success"]:
+                print(f"  ✅ 完成: {result['output_path']}")
+                success_count += 1
             else:
-                print(f"  ❌ 下载失败")
+                print(f"  ❌ {result['error']}")
                 failed_count += 1
         
         # 更新批次状态
@@ -618,14 +643,165 @@ class PDFProcessor:
         return False
     
     def _unzip_file(self, zip_path: Path, extract_to: Path) -> bool:
-        """解压ZIP文件"""
+        """安全解压ZIP文件（拒绝绝对路径与 .. 目录穿越）"""
+        extract_to = Path(extract_to).resolve()
         try:
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                for member in zip_ref.namelist():
+                    # 防御 zip-slip：解析后的目标必须仍在 extract_to 之内
+                    target = (extract_to / member).resolve()
+                    if not str(target).startswith(str(extract_to)):
+                        print(f"  ⚠️ 跳过不安全的压缩包条目: {member}")
+                        return False
                 zip_ref.extractall(extract_to)
             return True
         except Exception as e:
             print(f"  解压错误: {e}")
             return False
+
+    # ------------------------------------------------------------------
+    # MinerU 下载健壮性辅助
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _safe_stem(filename: str) -> str:
+        """由文件名生成安全的目录名"""
+        return "".join(
+            c if c.isalnum() or c in "._- " else "_" for c in Path(filename).stem
+        ).strip() or "unnamed"
+
+    def _resolve_paper_dir(
+        self, output_dir: Path, filename: str, batch_id: str, data_id: str
+    ) -> Path:
+        """
+        生成解析结果目录，避免不同 PDF（同名 stem）互相覆盖。
+
+        若目标目录已被「不同 data_id」的下载记录占用，则追加 data_id 短哈希后缀。
+        """
+        output_dir = Path(output_dir)
+        base = self._safe_stem(filename)
+        candidate = output_dir / base
+
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT data_id FROM download_records WHERE output_path = ?",
+                (str(candidate),),
+            )
+            owners = {row[0] for row in cur.fetchall()}
+        finally:
+            conn.close()
+
+        # 目录没被占用，或正是本 data_id 占用 -> 直接用
+        if not owners or owners == {data_id}:
+            return candidate
+
+        # 目录被其它 data_id 占用 -> 追加短哈希避免覆盖
+        suffix = hashlib.md5(data_id.encode()).hexdigest()[:6]
+        return output_dir / f"{base}__{suffix}"
+
+    @staticmethod
+    def _validate_parsed_dir(paper_dir: Path) -> Tuple[bool, int]:
+        """校验解析目录是否含有效 full.md，返回 (是否有效, 字符数)"""
+        full_md = Path(paper_dir) / "full.md"
+        if not full_md.exists() or full_md.stat().st_size == 0:
+            return False, 0
+        try:
+            text = full_md.read_text(encoding="utf-8")
+        except Exception:
+            return False, 0
+        if not text.strip():
+            return False, 0
+        return True, len(text)
+
+    def _record_download_success(
+        self, batch_id: str, data_id: str, filename: str,
+        paper_dir: Path, char_count: int
+    ) -> None:
+        """写入下载成功记录、更新 pdf_files、并更新统一论文目录"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO download_records
+                (batch_id, data_id, filename, output_path, download_status)
+                VALUES (?, ?, ?, ?, 'completed')
+                """,
+                (batch_id, data_id, filename, str(paper_dir)),
+            )
+            conn.execute(
+                """
+                UPDATE pdf_files
+                SET status = 'downloaded', updated_at = CURRENT_TIMESTAMP
+                WHERE filename = ?
+                """,
+                (filename,),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        # 统一论文目录：paper_id 沿用解析目录名（与提取/入库的 paper_id 对齐）
+        self.catalog.mark_parsed(
+            paper_id=Path(paper_dir).name,
+            parsed_dir=str(paper_dir),
+            char_count=char_count,
+            batch_id=batch_id,
+            mineru_data_id=data_id,
+            source_pdf=filename,
+        )
+
+    def _record_download_failure(
+        self, batch_id: str, data_id: str, filename: str,
+        paper_dir: Path, error: str
+    ) -> None:
+        """记录下载/解析失败到统一论文目录"""
+        self.catalog.mark_parse_failed(
+            paper_id=Path(paper_dir).name,
+            error=error,
+            batch_id=batch_id,
+            mineru_data_id=data_id,
+            source_pdf=filename,
+        )
+
+    def _download_and_extract(
+        self, batch_id: str, data_id: str, filename: str,
+        zip_url: str, output_dir: Path
+    ) -> Dict[str, Any]:
+        """
+        完整处理单个文件：定位目录 -> 下载 -> 安全解压 -> 校验 full.md -> 记账。
+
+        返回 {"success": bool, "output_path"/"error": ...}
+        """
+        paper_dir = self._resolve_paper_dir(output_dir, filename, batch_id, data_id)
+        paper_dir.mkdir(parents=True, exist_ok=True)
+        zip_path = paper_dir / "mineru_output.zip"
+
+        if not self._download_file(zip_url, zip_path):
+            self._record_download_failure(batch_id, data_id, filename, paper_dir, "下载失败")
+            return {"success": False, "error": "下载失败"}
+
+        if not self._unzip_file(zip_path, paper_dir):
+            self._record_download_failure(batch_id, data_id, filename, paper_dir, "解压失败")
+            return {"success": False, "error": "解压失败"}
+
+        # 删除ZIP节省空间
+        try:
+            zip_path.unlink()
+        except OSError:
+            pass
+
+        # 校验 MinerU 解析结果（常见 bug：zip 内缺少/为空的 full.md）
+        ok, char_count = self._validate_parsed_dir(paper_dir)
+        if not ok:
+            self._record_download_failure(
+                batch_id, data_id, filename, paper_dir, "解析结果缺少有效的 full.md"
+            )
+            return {"success": False, "error": "解析结果缺少有效的 full.md"}
+
+        self._record_download_success(batch_id, data_id, filename, paper_dir, char_count)
+        return {"success": True, "output_path": str(paper_dir)}
+
     
     def get_statistics(self) -> Dict[str, Any]:
         """获取统计信息"""
@@ -757,7 +933,8 @@ class PDFProcessor:
             """, (batch_id, data_id))
             existing = cur.fetchone()
             
-            if existing and Path(existing[0]).exists():
+            if existing and Path(existing[0]).exists() and \
+                    self._validate_parsed_dir(existing[0])[0]:
                 already_done += 1
                 continue
             
@@ -841,53 +1018,14 @@ class PDFProcessor:
     
     def _download_single_file(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """下载单个文件（用于并行下载）"""
-        batch_id = item["batch_id"]
-        data_id = item["data_id"]
-        filename = item["filename"]
-        zip_url = item["zip_url"]
-        output_dir = item["output_dir"]
-        
         try:
-            # 生成安全的目录名
-            safe_name = "".join(c if c.isalnum() or c in "._- " else "_" 
-                              for c in Path(filename).stem)
-            
-            paper_dir = output_dir / safe_name
-            paper_dir.mkdir(parents=True, exist_ok=True)
-            
-            zip_path = paper_dir / "mineru_output.zip"
-            
-            # 下载ZIP
-            if not self._download_file(zip_url, zip_path):
-                return {"success": False, "error": "下载失败"}
-            
-            # 解压
-            if not self._unzip_file(zip_path, paper_dir):
-                return {"success": False, "error": "解压失败"}
-            
-            # 删除ZIP节省空间
-            zip_path.unlink()
-            
-            # 记录下载成功
-            conn = sqlite3.connect(self.db_path)
-            conn.execute("""
-                INSERT OR REPLACE INTO download_records
-                (batch_id, data_id, filename, output_path, download_status)
-                VALUES (?, ?, ?, ?, 'completed')
-            """, (batch_id, data_id, filename, str(paper_dir)))
-            
-            # 更新PDF状态
-            conn.execute("""
-                UPDATE pdf_files
-                SET status = 'downloaded', updated_at = CURRENT_TIMESTAMP
-                WHERE filename = ?
-            """, (filename,))
-            
-            conn.commit()
-            conn.close()
-            
-            return {"success": True, "output_path": str(paper_dir)}
-            
+            return self._download_and_extract(
+                batch_id=item["batch_id"],
+                data_id=item["data_id"],
+                filename=item["filename"],
+                zip_url=item["zip_url"],
+                output_dir=item["output_dir"],
+            )
         except Exception as e:
             return {"success": False, "error": str(e)}
     

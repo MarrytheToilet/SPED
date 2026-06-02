@@ -1,23 +1,9 @@
 """
-Prompt组装层 - 与模型调用解耦的Prompt构建
+Prompt层 - 提取模式与prompt构建。
 
-设计原则：
-1. 不关心具体模型，只负责组装prompt
-2. 支持多种组装模式（全量/分块）
-3. 模板可配置
-4. Schema驱动的prompt生成
+新架构只保留：基于「生成schema」的扁平提取模式 GenericFlatMode。
+（旧的12表 PromptAssembler / SchemaPromptGenerator / FullMode 已移除）
 """
+from .modes import ExtractionMode, GenericFlatMode
 
-from .assembler import PromptAssembler, AssembledPrompt
-from .modes import ExtractionMode, FullMode, SkeletonFillMode
-from .schema_generator import SchemaPromptGenerator, GeneratedPromptParts
-
-__all__ = [
-    "PromptAssembler",
-    "AssembledPrompt",
-    "ExtractionMode",
-    "FullMode",
-    "SkeletonFillMode",
-    "SchemaPromptGenerator",
-    "GeneratedPromptParts",
-]
+__all__ = ["ExtractionMode", "GenericFlatMode"]

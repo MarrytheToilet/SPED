@@ -1,7 +1,8 @@
 """
-数据库管理模块
-"""
-from .db_manager import DatabaseManager
-from .csv_exporter import CSVExporter, export_all_formats
+数据库/目录模块。
 
-__all__ = ['DatabaseManager', 'CSVExporter', 'export_all_formats']
+旧的固定12表数据库已移除；保留 PaperCatalog（追踪PDF解析/提取状态）。
+"""
+from .catalog import PaperCatalog
+
+__all__ = ['PaperCatalog']

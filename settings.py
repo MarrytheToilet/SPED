@@ -21,12 +21,12 @@ PDF_DIR = RAW_DATA_DIR / "pdfs"
 PROCESSED_DIR = DATA_DIR / "processed"
 PARSED_DIR = PROCESSED_DIR / "parsed"
 EXTRACTED_DIR = PROCESSED_DIR / "extracted"
-ANALYZED_DIR = PROCESSED_DIR / "analyzed"
 UPLOADS_DIR = DATA_DIR / "uploads"
 SCHEMA_DIR = BASE_DIR / "data_schema"
+GENERATED_SCHEMA_DIR = SCHEMA_DIR / "generated"
 
 # 确保目录存在
-for dir_path in [PDF_DIR, PARSED_DIR, EXTRACTED_DIR, ANALYZED_DIR, UPLOADS_DIR]:
+for dir_path in [PDF_DIR, PARSED_DIR, EXTRACTED_DIR, UPLOADS_DIR, GENERATED_SCHEMA_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)
 
 # ==========================
@@ -45,6 +45,10 @@ MINERU_HEADERS = {
 # 上传配置
 # ==========================
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "200"))
+# 单个 PDF 体积上限（MB）：超过则拒绝上传/解析（MinerU 对大文件易超时/失败）
+MAX_PDF_SIZE_MB = int(os.getenv("MAX_PDF_SIZE_MB", "20"))
+# MinerU 上传速率上限（文件/分钟）：官方限制约 50/min，超出会 HTTP 429
+MINERU_UPLOAD_RATE_PER_MIN = int(os.getenv("MINERU_UPLOAD_RATE_PER_MIN", "50"))
 BATCH_MAX_TOTAL_MB = int(os.getenv("BATCH_MAX_TOTAL_MB", "120"))
 UPLOAD_CONFIG = {
     "enable_formula": os.getenv("UPLOAD_ENABLE_FORMULA", "True").lower() == "true",
@@ -59,223 +63,131 @@ FILE_CONFIG = {
 BATCH_CSV = UPLOADS_DIR / "upload_batches.csv"
 
 # ==========================
-# 数据库配置
+# 提取结果存储（已弃用固定12表数据库；改为 JSON + 生成schema）
 # ==========================
-DB_PATH = os.getenv("DB_PATH", str(DATA_DIR / "artificial_joint.db"))
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+# 旧的 artificial_joint.db / 12表导入流程已移除。
+# 提取结果以 JSON 落在 EXTRACTED_DIR，schema 落在 SCHEMA_DIR/generated。
 
 # ==========================
-# LLM API 配置
+# LLM API 配置（OpenAI 兼容端点 + 多agent分角色）
 # ==========================
-# 模型配置字典
-AVAILABLE_MODELS = {
-    # OpenAI
-    "gpt-4o": {
-        "provider": "openai",
-        "api_key": os.getenv("OPENAI_API_KEY", ""),
-        "api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
-    },
-    "gpt-4o-mini": {
-        "provider": "openai",
-        "api_key": os.getenv("OPENAI_API_KEY", ""),
-        "api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
-    },
-    "gpt-4-turbo": {
-        "provider": "openai",
-        "api_key": os.getenv("OPENAI_API_KEY", ""),
-        "api_base": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
-    },
-    # 硅基流动
-    "Pro/moonshotai/Kimi-K2.5": {
-        "provider": "siliconflow",
-        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
-        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
-    },
-    "moonshotai/Kimi-K2-Instruct-0905": {
-        "provider": "siliconflow",
-        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
-        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
-    },
-    "Pro/zai-org/GLM-5": {
-        "provider": "siliconflow",
-        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
-        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
-    },
-    "Pro/zai-org/GLM-4.7": {
-        "provider": "siliconflow",
-        "api_key": os.getenv("SILICONFLOW_API_KEY", ""),
-        "api_base": os.getenv("SILICONFLOW_API_BASE", "https://api.siliconflow.cn/v1"),
-    },
-    # DeepSeek
-    "deepseek-chat": {
-        "provider": "deepseek",
-        "api_key": os.getenv("DEEPSEEK_API_KEY", ""),
-        "api_base": os.getenv("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1"),
-    },
-    # 智谱AI (官方直连)
-    "glm-5": {
-        "provider": "zhipu",
-        "api_key": os.getenv("ZHIPU_API_KEY", ""),
-        "api_base": os.getenv("ZHIPU_API_BASE", "https://open.bigmodel.cn/api/paas/v4"),
-    },
-    "glm-4.7": {
-        "provider": "zhipu",
-        "api_key": os.getenv("ZHIPU_API_KEY", ""),
-        "api_base": os.getenv("ZHIPU_API_BASE", "https://open.bigmodel.cn/api/paas/v4"),
-    },
-    "glm-4.7-flash": {
-        "provider": "zhipu",
-        "api_key": os.getenv("ZHIPU_API_KEY", ""),
-        "api_base": os.getenv("ZHIPU_API_BASE", "https://open.bigmodel.cn/api/paas/v4"),
-    },
-    "glm-4-plus": {
-        "provider": "zhipu",
-        "api_key": os.getenv("ZHIPU_API_KEY", ""),
-        "api_base": os.getenv("ZHIPU_API_BASE", "https://open.bigmodel.cn/api/paas/v4"),
-    },
-}
+# 基础端点：只需 模型 / Base URL / API Key。
+# 兼容任意 OpenAI 兼容服务（DeepSeek、Qwen、GLM、Kimi、OpenAI、SiliconFlow ...）。
+LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-v4-flash")
+LLM_API_BASE = os.getenv("LLM_API_BASE", os.getenv("OPENAI_API_BASE", "https://api.deepseek.com/v1"))
+LLM_API_KEY = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", ""))
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # 统一走 OpenAI 兼容客户端
 
-# 默认模型
-DEFAULT_MODEL = os.getenv("LLM_MODEL", "moonshotai/Kimi-K2-Instruct-0905")
-
-# 当前使用的模型配置
-if DEFAULT_MODEL in AVAILABLE_MODELS:
-    current_model_config = AVAILABLE_MODELS[DEFAULT_MODEL]
-    OPENAI_API_KEY = current_model_config["api_key"]
-    OPENAI_API_BASE = current_model_config["api_base"]
-    OPENAI_MODEL = DEFAULT_MODEL
-    LLM_PROVIDER = current_model_config["provider"]
-else:
-    print(f"⚠️  警告: 模型 '{DEFAULT_MODEL}' 不在预定义列表中，使用环境变量配置")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
-    OPENAI_MODEL = DEFAULT_MODEL
-    LLM_PROVIDER = "custom"
+# ---- 向后兼容别名 ----
+DEFAULT_MODEL = LLM_MODEL
 
 # ==========================
-# 动态配置函数
+# 多agent分角色配置
 # ==========================
+# 每个角色可独立配置 模型/Base URL/API Key，未配置则回退到基础端点(LLM_*)。
+# 环境变量命名：AGENT_<ROLE>_MODEL / AGENT_<ROLE>_API_BASE / AGENT_<ROLE>_API_KEY
+# 设计意图：用「不同家族」的模型分别担任不同角色，靠多样性提升schema质量。
+#
+# 角色：
+#   proposer_a/b/c —— schema字段「提议者」(建议用不同家族模型，观点更多样)
+#   consolidator   —— 把多家提议「整合」为统一单表schema
+#   critic         —— 「评审」schema：查漏补缺、去冗余、控字段数
+#   extractor      —— 按schema对整篇论文做扁平提取(带原文evidence)
+AGENT_ROLE_NAMES = ["proposer_a", "proposer_b", "proposer_c", "consolidator", "critic", "extractor"]
 
-def get_model_config(model: str) -> dict:
+# 参与「提议」阶段的角色（多家族多样性来源）
+SCHEMA_PROPOSER_ROLES = [
+    r.strip() for r in os.getenv("SCHEMA_PROPOSER_ROLES", "proposer_a,proposer_b,proposer_c").split(",") if r.strip()
+]
+
+
+def get_agent_config(role: str = None) -> dict:
     """
-    获取指定模型的配置
-    
-    Args:
-        model: 模型名称，如 'gpt-4o', 'Qwen/Qwen2.5-72B-Instruct' 等
-    
-    Returns:
-        dict: 包含 provider, api_key, api_base, model 的配置字典
-    
-    Raises:
-        ValueError: 如果模型不存在或API密钥未配置
+    获取某个agent角色的端点配置。
+
+    优先读 AGENT_<ROLE>_*，缺省回退到基础 LLM_*。
+    返回: {role, model, api_base, api_key, provider}
     """
-    if model not in AVAILABLE_MODELS:
-        available = list(AVAILABLE_MODELS.keys())
-        raise ValueError(
-            f"未知的模型 '{model}'。\n"
-            f"可用模型: {', '.join(available[:5])}... "
-            f"(共{len(available)}个，使用 --list-models 查看全部)"
-        )
-    
-    config = AVAILABLE_MODELS[model]
-    
-    # 检查API key是否配置
-    if not config["api_key"]:
-        # 根据provider给出提示
-        provider = config.get("provider", "").upper()
-        env_var = f"{provider}_API_KEY" if provider else "API_KEY"
-        raise ValueError(
-            f"模型 '{model}' 的API密钥未配置，"
-            f"请在 .env 文件中设置 {env_var}"
-        )
-    
+    role = (role or "extractor").strip()
+    up = role.upper()
+
+    def _env(suffix, fallback):
+        return os.getenv(f"AGENT_{up}_{suffix}", fallback)
+
+    model = _env("MODEL", LLM_MODEL)
+    api_base = _env("API_BASE", LLM_API_BASE)
+    api_key = _env("API_KEY", LLM_API_KEY)
+    provider = _env("PROVIDER", LLM_PROVIDER)
     return {
-        "provider": config["provider"],
-        "api_key": config["api_key"],
-        "api_base": config["api_base"],
+        "role": role,
+        "model": model,
+        "api_base": api_base,
+        "api_key": api_key,
+        "provider": provider,
+    }
+
+
+def get_model_config(model: str = None) -> dict:
+    """获取基础端点配置（任意 model 名都用基础 LLM_API_BASE/KEY）。"""
+    model = model or LLM_MODEL
+    if not LLM_API_KEY:
+        raise ValueError("LLM API 密钥未配置，请在 .env 中设置 LLM_API_KEY")
+    return {
+        "provider": LLM_PROVIDER,
+        "api_key": LLM_API_KEY,
+        "api_base": LLM_API_BASE,
         "model": model,
     }
 
 
-def list_available_models() -> dict:
-    """
-    列出所有可用的模型及其配置状态
-    
-    Returns:
-        dict: {model: {provider, has_key, api_base}}
-    """
-    result = {}
-    for model, config in AVAILABLE_MODELS.items():
-        result[model] = {
-            "provider": config["provider"],
-            "has_key": bool(config["api_key"]),
-            "api_base": config["api_base"],
+def list_agent_endpoints() -> dict:
+    """列出各角色实际生效的端点（用于诊断/菜单展示）。"""
+    out = {}
+    for r in AGENT_ROLE_NAMES:
+        c = get_agent_config(r)
+        out[r] = {
+            "model": c["model"],
+            "api_base": c["api_base"],
+            "has_key": bool(c["api_key"]),
         }
-    return result
+    return out
 
 # ==========================
 # LLM 调用配置
 # ==========================
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.1"))
 LLM_TOP_P = float(os.getenv("LLM_TOP_P", "0.95"))
-LLM_FREQUENCY_PENALTY = float(os.getenv("LLM_FREQUENCY_PENALTY", "0.0"))
-LLM_PRESENCE_PENALTY = float(os.getenv("LLM_PRESENCE_PENALTY", "0.0"))
 
-# 模型的max_tokens限制配置
-MODEL_MAX_TOKENS = {
-    "gpt-4o": int(os.getenv("GPT4O_MAX_TOKENS", "16000")),
-    "gpt-4o-mini": int(os.getenv("GPT4O_MINI_MAX_TOKENS", "16000")),
-    "gpt-4-turbo": int(os.getenv("GPT4_TURBO_MAX_TOKENS", "16000")),
-    "Qwen/Qwen2.5-72B-Instruct": int(os.getenv("QWEN_72B_MAX_TOKENS", "30000")),
-    "Qwen/Qwen2.5-7B-Instruct": int(os.getenv("QWEN_7B_MAX_TOKENS", "30000")),
-    "moonshotai/Kimi-K2-Instruct-0905": int(os.getenv("KIMI_MAX_TOKENS", "32000")),
-    "Pro/moonshotai/Kimi-K2-Instruct-0905": int(os.getenv("KIMI_MAX_TOKENS", "32000")),
-    "Pro/moonshotai/Kimi-K2.5": int(os.getenv("KIMI_K25_MAX_TOKENS", "32000")),
-    "deepseek-ai/DeepSeek-V2.5": int(os.getenv("DEEPSEEK_V25_MAX_TOKENS", "30000")),
-    "deepseek-chat": int(os.getenv("DEEPSEEK_CHAT_MAX_TOKENS", "8000")),  # DeepSeek限制8192
-    # 智谱模型
-    "glm-5": int(os.getenv("GLM5_MAX_TOKENS", "128000")),    # GLM-5 最大128K输出
-    "glm-4.7": int(os.getenv("GLM47_MAX_TOKENS", "32000")),
-    "glm-4.6": int(os.getenv("GLM46_MAX_TOKENS", "32000")),
-    "glm-4-plus": int(os.getenv("GLM4_PLUS_MAX_TOKENS", "16000")),
-    "glm-4-flash": int(os.getenv("GLM4_FLASH_MAX_TOKENS", "16000")),
-}
+# 模型最大输出 token 数。reasoning 模型(思考+正文)需要很大额度，默认拉满到 65536，
+# 避免因 max_tokens 不足导致正文为空/被截断。base.call() 仍会在截断时自动加倍重试。
+LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "65536"))
+MODEL_MAX_TOKENS = {LLM_MODEL: LLM_MAX_OUTPUT_TOKENS}
 
-# Chunk模式的max_tokens限制（通常小于full模式）
-CHUNK_MODE_MAX_TOKENS = int(os.getenv("CHUNK_MODE_MAX_TOKENS", "4096"))
+# ==========================
+# Schema 自动设计配置
+# ==========================
+SCHEMA_MIN_FIELDS = int(os.getenv("SCHEMA_MIN_FIELDS", "20"))   # 字段数下限
+SCHEMA_MAX_FIELDS = int(os.getenv("SCHEMA_MAX_FIELDS", "80"))   # 字段数上限（放宽，允许更多字段）
+SCHEMA_SAMPLE_SIZE = int(os.getenv("SCHEMA_SAMPLE_SIZE", "8"))  # 设计schema时采样论文数
+SCHEMA_EXCERPT_BUDGET = int(os.getenv("SCHEMA_EXCERPT_BUDGET", "16000"))  # 单篇摘录字符预算
 
 # ==========================
 # 并行处理配置
 # ==========================
-# 最大worker数量（默认为CPU核心数，但不超过此值）
 MAX_WORKERS = int(os.getenv("MAX_WORKERS", "4"))
-# 默认worker数量（None表示自动，将使用min(CPU核心数, MAX_WORKERS)）
+WEB_PORT = int(os.getenv("WEB_PORT", "8000"))
 DEFAULT_WORKERS = os.getenv("DEFAULT_WORKERS", None)
 if DEFAULT_WORKERS is not None:
     DEFAULT_WORKERS = int(DEFAULT_WORKERS)
 
 # ==========================
-# 文本分块配置
+# 提取输入大小护栏
 # ==========================
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "6000"))  # 每个chunk的字符数（减小以避免请求过长）
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))  # chunk之间的重叠字符数
+# 单篇论文送入LLM的最大字符数；0 表示不限制（始终送全文）。
+EXTRACT_MAX_INPUT_CHARS = int(os.getenv("EXTRACT_MAX_INPUT_CHARS", "0"))
 
-# ==========================
-# 骨架提取采样配置（针对长论文）
-# ==========================
-# 触发采样的论文长度阈值（字符数），超过此长度则采用采样策略
-SKELETON_MAX_LENGTH = int(os.getenv("SKELETON_MAX_LENGTH", "30000"))
-# 开头保留的字符数（包含摘要、引言等关键信息）
-SKELETON_HEAD_CHARS = int(os.getenv("SKELETON_HEAD_CHARS", "10000"))
-# 剩余内容随机抽取的比例（0.0-1.0）
-SKELETON_SAMPLE_RATIO = float(os.getenv("SKELETON_SAMPLE_RATIO", "0.6"))
-# 最终硬截断阈值（采样后仍超过此值则直接截断）
-SKELETON_HARD_LIMIT = int(os.getenv("SKELETON_HARD_LIMIT", "30000"))
-
-# ==========================
-# 向量数据库配置
-# ==========================
-CHROMA_PERSIST_DIR = str(DATA_DIR / "chroma_db")
+# 提取阶段并行度：同时处理多少篇论文（每个worker独立LLM客户端）。
+EXTRACT_CONCURRENCY = int(os.getenv("EXTRACT_CONCURRENCY", "8"))
 
 # ==========================
 # 日志配置
@@ -319,3 +231,39 @@ LLM_MIN_INTERVAL = float(os.getenv("LLM_MIN_INTERVAL", "3.0"))
 # SiliconFlow 推理开关（仅对支持的模型生效）
 SILICONFLOW_ENABLE_THINKING = os.getenv("SILICONFLOW_ENABLE_THINKING", "False").lower() == "true"
 SILICONFLOW_THINKING_BUDGET = int(os.getenv("SILICONFLOW_THINKING_BUDGET", "1024"))
+
+
+# ==========================
+# 运行时重载配置（供 Web 设置页热更新使用）
+# ==========================
+def reload_config() -> dict:
+    """从 .env 重新加载并重算「可热更新」的端点配置。
+
+    仅覆盖 Web 设置页可编辑的字段：MinerU(token/base) 与 LLM(model/base/key/provider)。
+    LLM 工厂(_base_defaults)与 get_agent_config 在调用时读取这些模块全局量，
+    因此重算后立即生效；MinerU 由 PDFProcessor 在构造时快照，重载只影响新建实例
+    （避免打断进行中的解析任务）。
+    返回当前生效的（脱敏后）配置摘要。
+    """
+    global MINERU_TOKEN, MINERU_API_BASE, MINERU_HEADERS
+    global LLM_MODEL, LLM_API_BASE, LLM_API_KEY, LLM_PROVIDER, DEFAULT_MODEL
+    global EXTRACT_CONCURRENCY
+
+    load_dotenv(override=True)
+
+    MINERU_TOKEN = os.getenv("MINERU_TOKEN", "")
+    MINERU_API_BASE = os.getenv("MINERU_API_BASE", "https://mineru.net/api/v4")
+    MINERU_HEADERS = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {MINERU_TOKEN}",
+    }
+
+    LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-v4-flash")
+    LLM_API_BASE = os.getenv("LLM_API_BASE", os.getenv("OPENAI_API_BASE", "https://api.deepseek.com/v1"))
+    LLM_API_KEY = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", ""))
+    LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
+    DEFAULT_MODEL = LLM_MODEL
+    EXTRACT_CONCURRENCY = int(os.getenv("EXTRACT_CONCURRENCY", "8"))
+
+    return {"mineru_api_base": MINERU_API_BASE, "llm_model": LLM_MODEL,
+            "llm_api_base": LLM_API_BASE, "extract_concurrency": EXTRACT_CONCURRENCY}

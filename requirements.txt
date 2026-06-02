@@ -10,6 +10,7 @@ sqlalchemy>=2.0.23
 openai>=1.3.0
 langchain>=0.0.340
 tiktoken>=0.5.2
+json_repair>=0.25.0  # 修复 reasoning 模型偶发的非法 JSON 输出
 
 # 数据处理
 pandas>=2.1.4

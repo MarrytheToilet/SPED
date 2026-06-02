@@ -32,10 +32,10 @@ venv.bak/
 .venv/
 
 # Environment Variables & Sensitive Info
-# .env
-# .env.local
-# .env.*.local
-# *.env
+.env
+.env.local
+.env.*.local
+*.env
 # config.py
 # upload_batches.csv
 

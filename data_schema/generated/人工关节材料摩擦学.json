@@ -1,0 +1,558 @@
+{
+  "schema_version": "auto-1",
+  "slug": "人工关节材料摩擦学",
+  "domain": "人工关节材料摩擦学",
+  "description": "髋/膝关节的内衬、球头、股骨柄的材料成分、几何尺寸、物理性能、摩擦磨损实验参数与结果、计算模拟",
+  "record_definition": "一个髋/膝关节植入物组件（内衬、球头或股骨柄）在特定处理或测试条件下的单个数据点，包括材料成分、几何尺寸、物理性能、摩擦磨损实验结果或计算模拟输出。",
+  "model": "deepseek-v4-flash",
+  "generated_at": "2026-06-02T12:25:08",
+  "source_papers": [
+    "cavaliere2004",
+    "tone2018",
+    "pavan2016",
+    "index",
+    "FULL_TEXT"
+  ],
+  "field_count": 44,
+  "fields": [
+    {
+      "name": "material_composition",
+      "type": "string",
+      "description": "主要材料组成，如MPC接枝HXLPE",
+      "extraction_hint": "从标题和摘要中明确",
+      "unit": null,
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "component_type",
+      "type": "enum",
+      "description": "植入物组件类型",
+      "extraction_hint": "从论文描述中获取",
+      "unit": null,
+      "enum_values": [
+        "liner",
+        "femoral head",
+        "stem",
+        "acetabular cup"
+      ],
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "base_polymer",
+      "type": "string",
+      "description": "基底聚合物，如高交联聚乙烯（HXLPE）",
+      "extraction_hint": "摘要及方法部分",
+      "unit": null,
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "grafting_material",
+      "type": "string",
+      "description": "接枝材料，如MPC (2-methacryloyloxyethyl phosphorylcholine)",
+      "extraction_hint": "全文提及",
+      "unit": null,
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "heat_treatment",
+      "type": "string",
+      "description": "热处理状态",
+      "extraction_hint": "摘要中提及",
+      "unit": null,
+      "enum_values": [
+        "T6",
+        "annealed",
+        "quenched"
+      ],
+      "importance": "common",
+      "coverage": 2,
+      "from_figure": false
+    },
+    {
+      "name": "matrix_alloy",
+      "type": "string",
+      "description": "基体金属合金牌号（用于金属基复合材料植入物）",
+      "extraction_hint": "从摘要和正文中提取",
+      "unit": null,
+      "enum_values": [
+        "6061",
+        "7005",
+        "Ti6Al4V",
+        "CoCrMo"
+      ],
+      "importance": "rare_important",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "reinforcement",
+      "type": "string",
+      "description": "增强相陶瓷颗粒",
+      "extraction_hint": "从摘要中提取",
+      "unit": null,
+      "enum_values": [
+        "Al2O3p",
+        "HAp",
+        "ZrO2"
+      ],
+      "importance": "rare_important",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "reinforcement_content",
+      "type": "number",
+      "description": "增强相质量分数或体积分数",
+      "extraction_hint": "从材料描述中提取",
+      "unit": "%",
+      "enum_values": null,
+      "importance": "rare_important",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "thickness",
+      "type": "number",
+      "description": "组件厚度（如内衬厚度）",
+      "extraction_hint": "从几何尺寸描述中提取",
+      "unit": "mm",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "diameter",
+      "type": "number",
+      "description": "组件直径（如球头直径）",
+      "extraction_hint": "从几何尺寸描述中提取",
+      "unit": "mm",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "surface_roughness_ra",
+      "type": "number",
+      "description": "表面粗糙度Ra",
+      "extraction_hint": "从表面表征中提取",
+      "unit": "μm",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "ultimate_tensile_strength",
+      "type": "number",
+      "description": "抗拉强度",
+      "extraction_hint": "从数据表或图中估算",
+      "unit": "MPa",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "hardness",
+      "type": "number",
+      "description": "硬度（如维氏硬度）",
+      "extraction_hint": "从硬度测试结果中提取",
+      "unit": "HV",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "testing_temperature",
+      "type": "string",
+      "description": "测试温度",
+      "extraction_hint": "从实验条件中提取",
+      "unit": null,
+      "enum_values": [
+        "room temperature",
+        "37°C",
+        "body temperature"
+      ],
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "testing_type",
+      "type": "string",
+      "description": "力学测试类型",
+      "extraction_hint": "从标题或方法中提取",
+      "unit": null,
+      "enum_values": [
+        "tension",
+        "compression",
+        "wear",
+        "hardness",
+        "impact"
+      ],
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "wear_test_type",
+      "type": "string",
+      "description": "磨损试验类型",
+      "extraction_hint": "从实验方法中提取",
+      "unit": null,
+      "enum_values": [
+        "pin-on-disc",
+        "hip simulator",
+        "reciprocating"
+      ],
+      "importance": "core",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "wear_test_load",
+      "type": "number",
+      "description": "磨损试验施加的载荷",
+      "extraction_hint": "从实验参数中提取",
+      "unit": "N",
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "wear_test_speed",
+      "type": "number",
+      "description": "磨损试验滑动速度",
+      "extraction_hint": "从实验参数中提取",
+      "unit": "m/s",
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "lubricant",
+      "type": "string",
+      "description": "润滑条件",
+      "extraction_hint": "从实验方法中提取",
+      "unit": null,
+      "enum_values": [
+        "bovine serum",
+        "saline",
+        "dry"
+      ],
+      "importance": "core",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "test_duration",
+      "type": "number",
+      "description": "磨损试验周期数",
+      "extraction_hint": "从实验参数中提取",
+      "unit": "cycles",
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "wear_rate",
+      "type": "number",
+      "description": "磨损率",
+      "extraction_hint": "从结果中提取",
+      "unit": "mm³/MCycles",
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "friction_coefficient",
+      "type": "number",
+      "description": "摩擦系数",
+      "extraction_hint": "从结果中提取",
+      "unit": null,
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 0,
+      "from_figure": false
+    },
+    {
+      "name": "oxidation_index",
+      "type": "number",
+      "description": "氧化指数（OI），无量纲",
+      "extraction_hint": "Figure 6a y轴或Table",
+      "unit": null,
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "lipid_absorption_index",
+      "type": "number",
+      "description": "脂质吸收指数（LAI），无量纲",
+      "extraction_hint": "Figure 6b y轴",
+      "unit": null,
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "crystallinity_fraction",
+      "type": "number",
+      "description": "结晶度百分比",
+      "extraction_hint": "Figure 8相分数中的结晶相",
+      "unit": "%",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "amorphous_fraction",
+      "type": "number",
+      "description": "非晶相百分比",
+      "extraction_hint": "Figure 8相分数中的非晶相",
+      "unit": "%",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "third_phase_fraction",
+      "type": "number",
+      "description": "第三相（中间相）百分比",
+      "extraction_hint": "Figure 8相分数中的第三相",
+      "unit": "%",
+      "enum_values": null,
+      "importance": "rare_important",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "zone",
+      "type": "enum",
+      "description": "分析区域：主磨损区(MWZ)、非磨损区(NWZ)、边缘区(rim zone)",
+      "extraction_hint": "Figure 2及正文标注",
+      "unit": null,
+      "enum_values": [
+        "MWZ",
+        "NWZ",
+        "rim zone"
+      ],
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "sub_surface_depth_um",
+      "type": "number",
+      "description": "距轴承表面的亚表面深度",
+      "extraction_hint": "Figure 8横坐标",
+      "unit": "μm",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "mpc_layer_remaining",
+      "type": "boolean",
+      "description": "接枝的MPC层是否仍存在于该区域",
+      "extraction_hint": "XPS和FTIR结果，正文讨论",
+      "unit": null,
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "surface_carbon_at_percent",
+      "type": "number",
+      "description": "XPS测得的表面碳原子百分比",
+      "extraction_hint": "Table II",
+      "unit": "at.%",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "surface_nitrogen_at_percent",
+      "type": "number",
+      "description": "XPS测得的表面氮原子百分比",
+      "extraction_hint": "Table II",
+      "unit": "at.%",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "surface_phosphorus_at_percent",
+      "type": "number",
+      "description": "XPS测得的表面磷原子百分比",
+      "extraction_hint": "Table II",
+      "unit": "at.%",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "ftir_peak_present_1240",
+      "type": "boolean",
+      "description": "FT-IR光谱在1240 cm⁻¹处是否出现峰值（对应P-O键）",
+      "extraction_hint": "Figure 5及正文描述",
+      "unit": null,
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "ftir_peak_present_1080",
+      "type": "boolean",
+      "description": "FT-IR光谱在1080 cm⁻¹处是否出现峰值",
+      "extraction_hint": "Figure 5",
+      "unit": null,
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "ftir_peak_present_970",
+      "type": "boolean",
+      "description": "FT-IR光谱在970 cm⁻¹处是否出现峰值",
+      "extraction_hint": "Figure 5",
+      "unit": null,
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "microstructure_observation_method",
+      "type": "string",
+      "description": "微观结构观察方法",
+      "extraction_hint": "从方法部分提取",
+      "unit": null,
+      "enum_values": [
+        "optical microscopy",
+        "SEM",
+        "TEM"
+      ],
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "fracture_surface_analysis_tool",
+      "type": "string",
+      "description": "断口分析所用电子显微镜类型",
+      "extraction_hint": "从方法部分提取",
+      "unit": null,
+      "enum_values": [
+        "FEGSEM",
+        "SEM",
+        "EDX"
+      ],
+      "importance": "rare_important",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "implantation_duration_months",
+      "type": "number",
+      "description": "体内植入时长",
+      "extraction_hint": "从Table 1或正文中提取",
+      "unit": "months",
+      "enum_values": null,
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "retrieval_sample_id",
+      "type": "enum",
+      "description": "取出物样本编号",
+      "extraction_hint": "全文各图表对应",
+      "unit": null,
+      "enum_values": [
+        "Sample 1",
+        "Sample 2",
+        "Sample 3"
+      ],
+      "importance": "core",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "fe_model_software",
+      "type": "string",
+      "description": "有限元模拟所用软件",
+      "extraction_hint": "FE modelling章节",
+      "unit": null,
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "fe_model_dimension",
+      "type": "enum",
+      "description": "有限元模型维度",
+      "extraction_hint": "FE模型描述",
+      "unit": null,
+      "enum_values": [
+        "2D",
+        "3D"
+      ],
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": false
+    },
+    {
+      "name": "max_stress",
+      "type": "number",
+      "description": "模拟得到的最大应力值",
+      "extraction_hint": "FE结果如Figure 6-19",
+      "unit": "MPa",
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    },
+    {
+      "name": "max_strain",
+      "type": "number",
+      "description": "模拟得到的最大应变值",
+      "extraction_hint": "FE结果如Figure 6-19",
+      "unit": null,
+      "enum_values": null,
+      "importance": "common",
+      "coverage": 1,
+      "from_figure": true
+    }
+  ]
+}

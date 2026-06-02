@@ -33,13 +33,13 @@ class ExtractionMode(ABC):
     定义提取流程的接口，不同模式实现不同策略
     """
     
-    def __init__(self, llm_client, prompt_assembler):
+    def __init__(self, llm_client, prompt_assembler=None):
         """
         初始化
         
         Args:
             llm_client: LLM客户端
-            prompt_assembler: Prompt组装器
+            prompt_assembler: 兼容保留参数（扁平模式不使用）
         """
         self.llm_client = llm_client
         self.prompt_assembler = prompt_assembler
