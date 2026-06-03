@@ -16,12 +16,12 @@ from settings import (
     MINERU_API_BASE as API_BASE,
     MINERU_HEADERS as HEADERS,
     MINERU_WEB_BASE as WEB_BASE,
-    PDF_DIR,
     BATCH_CSV,
     BATCH_SIZE,
     UPLOAD_CONFIG,
     FILE_CONFIG
 )
+import settings
 
 def upload_batch(batch_files, batch_index):
     """
@@ -104,9 +104,10 @@ def upload_batch(batch_files, batch_index):
 
 def main():
     """主函数 - 批量上传PDF文件"""
-    pdf_files = glob(str(PDF_DIR / "*.pdf"))
+    pdf_dir = settings.collection_pdf_dir(settings.DEFAULT_COLLECTION)
+    pdf_files = glob(str(pdf_dir / "**" / "*.pdf"), recursive=True)
     if not pdf_files:
-        print(f"⚠️ 没有找到 PDF 文件：{PDF_DIR}")
+        print(f"⚠️ 没有找到 PDF 文件：{pdf_dir}")
         return
 
     total_batches = ceil(len(pdf_files) / BATCH_SIZE)

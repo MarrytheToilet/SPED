@@ -16,14 +16,14 @@ from settings import (
     MINERU_API_BASE as API_BASE,
     MINERU_HEADERS as HEADERS,
     BATCH_CSV,
-    PARSED_DIR,
     DOWNLOAD_RETRY,
     DOWNLOAD_TIMEOUT,
     DOWNLOAD_CHUNK_SIZE
 )
+import settings
 
-# OUTPUT_DIR是parsed/output
-OUTPUT_DIR = PARSED_DIR / "output"
+# OUTPUT_DIR 是当前默认 collection 的 parsed/output
+OUTPUT_DIR = settings.collection_parsed_dir(settings.DEFAULT_COLLECTION) / "output"
 
 
 def get_batch_results(batch_id):

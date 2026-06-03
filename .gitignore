@@ -1,45 +1,131 @@
+# =============================================================================
+# Local configuration and secrets
+# =============================================================================
+.env
+.env.*
+*.env
+!.env.example
+
+
+# =============================================================================
 # Python
+# =============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual Environment
+.venv/
 venv/
 env/
 ENV/
 env.bak/
 venv.bak/
-.venv/
+pip-wheel-metadata/
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
 
-# Environment Variables & Sensitive Info
-.env
-.env.local
-.env.*.local
-*.env
-# config.py
-# upload_batches.csv
 
-# IDEs
+# =============================================================================
+# Test, lint, type-check, and coverage artifacts
+# =============================================================================
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+
+
+# =============================================================================
+# Runtime state, logs, caches, and temporary files
+# =============================================================================
+logs/
+log/
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.pid
+*.lock
+
+# SQLite databases and sidecar files are local runtime state.
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+
+
+# =============================================================================
+# SPED data
+# =============================================================================
+# Treat all paper PDFs, parsed text, generated schemas, extraction results,
+# state DBs, backups, and long-running job files as local data by default.
+data/**
+!data/
+!data/README.md
+!data/**/.gitkeep
+
+# Legacy locations from older layouts. Keep ignored if scripts recreate them.
+data_schema/**
+raw_docs/
+downloads/
+output/
+exports/
+.archive/
+
+
+# =============================================================================
+# Large document and archive inputs/outputs
+# =============================================================================
+*.pdf
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.gz
+
+
+# =============================================================================
+# Frontend and package-manager artifacts
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.parcel-cache/
+.vite/
+
+
+# =============================================================================
+# Notebooks, editors, OS files
+# =============================================================================
+.ipynb_checkpoints/
+*.ipynb
 .vscode/
 .idea/
 *.swp
@@ -50,85 +136,10 @@ Thumbs.db
 .AppleDouble
 .LSOverride
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
 
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-coverage.xml
-*.cover
-.hypothesis/
-
-# Logs
-logs/
-*.log
-log/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-*.db-journal
-
-# Data files - ignore contents but keep structure
-# Raw data
-data/raw/pdfs/*
-data/raw/pdfs_processed/*
-!data/raw/.gitkeep
-!data/raw/pdfs/.gitkeep
-!data/raw/pdfs_processed/.gitkeep
-
-# Processed data
-data/processed/parsed/*
-data/processed/extracted/*
-data/processed/analyzed/*
-!data/processed/.gitkeep
-!data/processed/parsed/.gitkeep
-!data/processed/extracted/.gitkeep
-!data/processed/analyzed/.gitkeep
-
-# Uploads tracking
-data/uploads/upload_batches.csv
-data/uploads/processing_status.json
-!data/uploads/.gitkeep
-
-# Exports
-data/exports/*
-!data/exports/.gitkeep
-
-# Database
-data/*.db
-data/*.sqlite
-data/*.sqlite3
-
+# =============================================================================
 # Documentation builds
+# =============================================================================
 docs/_build/
 docs/.doctrees/
 site/
-
-# Archive and temporary files
-.archive/
-output/
-*.zip
-*.tmp
-*.temp
-*.bak
-*.backup
-
-# PDFs (papers, documents)
-*.pdf
-
-# Type checkers
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.pyre/
-.pytype/
-
-# Profiling data
-.prof

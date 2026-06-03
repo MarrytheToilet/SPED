@@ -12,7 +12,7 @@ from src.llm.base import LLMClient, LLMConfig, LLMResponse
 from src.schema.models import GeneratedSchema, SchemaField, validate_schema
 from src.schema.discovery import SchemaDiscovery
 from src.schema.sampling import build_excerpt
-from src.prompts.modes.flat_mode import GenericFlatMode
+from src.prompts.modes.flat_mode import GenericFlatMode, MultiAgentFlatMode
 
 
 class FakeLLM(LLMClient):
@@ -62,6 +62,47 @@ def test_validate_schema_duplicate_and_enum():
     assert any("枚举" in e for e in errs)
 
 
+def test_generated_schema_keeps_discovery_trace():
+    schema = GeneratedSchema(
+        domain="d",
+        description="x",
+        fields=[SchemaField(name="a")],
+        discovery_trace={"source_papers_used": ["p1"], "repair_notes": ["ok"]},
+    )
+    loaded = GeneratedSchema.from_dict(schema.to_dict())
+    assert loaded.discovery_trace["source_papers_used"] == ["p1"]
+    assert loaded.discovery_trace["repair_notes"] == ["ok"]
+
+
+def test_generated_schema_keeps_extraction_format():
+    schema = GeneratedSchema(
+        domain="d",
+        description="x",
+        fields=[SchemaField(name="a")],
+        extraction_format='{"records":[...]}',
+    )
+    loaded = GeneratedSchema.from_dict(schema.to_dict())
+    assert loaded.extraction_format == '{"records":[...]}'
+
+
+def test_repair_schema_dedup_enum_and_fill_candidates():
+    disc = SchemaDiscovery(domain="d", description="x", target_min=3, target_max=5)
+    schema = GeneratedSchema(domain="d", description="x", fields=[
+        SchemaField(name="metric", type="enum", enum_values=None, description="short"),
+        SchemaField(name="Metric", type="number", coverage=2, description="better"),
+    ])
+    candidates = [
+        {"name": "object_name", "type": "string", "coverage": 3, "description": "研究对象"},
+        {"name": "condition", "type": "string", "coverage": 2, "description": "实验条件"},
+    ]
+    repaired, notes = disc._repair_schema(schema, candidates)
+    assert repaired.record_definition
+    assert len(repaired.fields) == 3
+    assert len({f.normalized_key() for f in repaired.fields}) == 3
+    assert any("合并重复字段" in n for n in notes)
+    assert any(f.name == "object_name" for f in repaired.fields)
+
+
 def test_discovery_coverage_and_consolidation():
     cand = {"fields": [
         {"name": "material", "type": "string", "description": "材料"},
@@ -89,6 +130,84 @@ def test_discovery_coverage_and_consolidation():
     # coverage 回填
     mat = next(f for f in schema.fields if f.name == "material")
     assert mat.coverage == 2
+
+
+def test_schema_discovery_full_schema_agents(monkeypatch, tmp_path):
+    paper_dir = tmp_path / "p1"
+    paper_dir.mkdir()
+    (paper_dir / "full.md").write_text(
+        "# Abstract\nMaterial A was tested.\n# Introduction\nStudy intro.\n# Experimental\nLoad was 1 N.",
+        encoding="utf-8",
+    )
+    agent_schema = {
+        "record_definition": "一种材料一次实验",
+        "fields": [
+            {"name": "material", "type": "string", "importance": "core", "description": "材料"},
+            {"name": "load", "type": "number", "unit": "N", "importance": "core", "description": "载荷"},
+        ],
+        "extraction_format": "records with value/evidence",
+    }
+    merged_schema = {
+        "record_definition": "一种材料在一组条件下的一次实验",
+        "fields": [
+            {"name": "material", "type": "string", "importance": "core", "description": "材料"},
+            {"name": "load", "type": "number", "unit": "N", "importance": "core", "description": "载荷"},
+            {"name": "result", "type": "string", "importance": "common", "description": "结果"},
+        ],
+        "extraction_format": "records array; each field has value/evidence",
+    }
+    reviewed_schema = {
+        "record_definition": "一种材料在一组条件下的一次实验",
+        "fields": merged_schema["fields"],
+        "extraction_format": "records array; each field has value/evidence",
+    }
+    fake = FakeLLM({
+        "schema_draft": agent_schema,
+        "schema_merge": merged_schema,
+        "schema_review": reviewed_schema,
+    })
+    disc = SchemaDiscovery(
+        domain="d",
+        description="x",
+        sample_size=1,
+        target_min=1,
+        target_max=5,
+        schema_agent_roles=["schema_agent_a", "schema_agent_b", "schema_agent_c"],
+    )
+    disc._clients = {
+        "schema_agent_a": fake,
+        "schema_agent_b": fake,
+        "schema_agent_c": fake,
+        "schema_merger": fake,
+        "schema_reviewer": fake,
+    }
+    monkeypatch.setattr(
+        "src.schema.discovery.load_paper_text",
+        lambda pid, collection=None: (paper_dir / "full.md").read_text(encoding="utf-8"),
+    )
+    monkeypatch.setattr(
+        "src.schema.discovery.build_schema_context_for_papers",
+        lambda paper_ids, budget_per_paper, collection=None: (paper_dir / "full.md").read_text(encoding="utf-8"),
+    )
+    schema = disc.discover(["p1"])
+    assert len(schema.fields) == 3
+    assert schema.extraction_format
+    assert schema.discovery_trace["pipeline"] == "schema_draft_merge_review"
+    assert len(schema.discovery_trace["schema_drafts"]) == 3
+
+
+def test_merge_candidates_counts_coverage_by_paper_not_agent():
+    disc = SchemaDiscovery(domain="d", description="x", sample_size=1, target_min=1, target_max=10)
+    # Same paper, two proposers both suggest material; coverage should count this paper once.
+    same_paper_fields = [
+        {"name": "material", "type": "string", "description": "A"},
+        {"name": "material", "type": "string", "description": "B"},
+        {"name": "wear_rate", "type": "number", "unit": "mm3/Nm"},
+    ]
+    merged = disc._merge_candidates([same_paper_fields])
+    cov = {m["name"]: m["coverage"] for m in merged}
+    assert cov["material"] == 1
+    assert cov["wear_rate"] == 1
 
 
 def test_flat_extract_evidence_rules():
@@ -128,6 +247,68 @@ def test_flat_extract_scalar_cells():
     mode = GenericFlatMode(fake, schema)
     res = mode.extract("p1", source)
     assert res.records[0]["material"]["value"] == "Ti6Al4V"
+
+
+def test_multi_agent_flat_extract_merges_candidates():
+    source = "Material is Ti6Al4V. Wear rate was 1.2 mm3/Nm."
+    schema = GeneratedSchema(domain="d", description="x", fields=[
+        SchemaField(name="material", type="string"),
+        SchemaField(name="wear_rate", type="number", unit="mm3/Nm"),
+    ])
+    a = FakeLLM({"flat_extract": {"records": [{
+        "material": {"value": "Ti6Al4V", "evidence": "Material is Ti6Al4V"}
+    }]}})
+    b = FakeLLM({"flat_extract": {"records": [{
+        "wear_rate": {"value": 1.2, "evidence": "Wear rate was 1.2 mm3/Nm"}
+    }]}})
+    merger = FakeLLM({"flat_merge": {"records": [{
+        "material": {"value": "Ti6Al4V", "evidence": "Material is Ti6Al4V"},
+        "wear_rate": {"value": 1.2, "evidence": "Wear rate was 1.2 mm3/Nm"},
+    }]}})
+    mode = MultiAgentFlatMode({"extractor_a": a, "extractor_b": b}, merger, schema)
+    res = mode.extract("p1", source)
+    assert res.success
+    assert res.count == 1
+    assert res.records[0]["material"]["value"] == "Ti6Al4V"
+    assert res.records[0]["wear_rate"]["value"] == 1.2
+    assert res.metadata["merge_used"] is True
+    assert res.metadata["successful_agents"] == ["extractor_a", "extractor_b"]
+
+
+def test_multi_agent_flat_extract_reviews_merged_records():
+    source = "Material is Ti6Al4V. Wear rate was 1.2 mm3/Nm."
+    schema = GeneratedSchema(domain="d", description="x", fields=[
+        SchemaField(name="material", type="string"),
+        SchemaField(name="wear_rate", type="number", unit="mm3/Nm"),
+    ])
+    a = FakeLLM({"flat_extract": {"records": [{
+        "material": {"value": "Ti6Al4V", "evidence": "Material is Ti6Al4V"}
+    }]}})
+    b = FakeLLM({"flat_extract": {"records": [{
+        "wear_rate": {"value": 1.2, "evidence": "Wear rate was 1.2 mm3/Nm"}
+    }]}})
+    merger = FakeLLM({"flat_merge": {"records": [{
+        "material": {"value": "Ti6Al4V", "evidence": "Material is Ti6Al4V"},
+        "wear_rate": {"value": 1.2, "evidence": "Wear rate was 1.2 mm3/Nm"},
+    }]}})
+    reviewer = FakeLLM({"flat_review": {
+        "records": [{
+            "material": {"value": "Ti6Al4V", "evidence": "Material is Ti6Al4V"},
+            "wear_rate": {"value": 1.2, "evidence": "Wear rate was 1.2 mm3/Nm"},
+        }],
+        "review": {"passed": True, "issues": []},
+    }})
+    mode = MultiAgentFlatMode(
+        {"extractor_a": a, "extractor_b": b},
+        merger,
+        schema,
+        reviewer_client=reviewer,
+    )
+    res = mode.extract("p1", source)
+    assert res.success
+    assert res.metadata["review_used"] is True
+    assert res.metadata["review"]["passed"] is True
+    assert res.metadata["evidence_verified"] == 2
 
 
 if __name__ == "__main__":

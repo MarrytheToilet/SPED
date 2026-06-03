@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from loguru import logger
 
 from src.llm import create_llm_client, create_llm_client_for_agent, LLMClient
-from src.prompts.modes import GenericFlatMode
+from src.prompts.modes import GenericFlatMode, MultiAgentFlatMode
 
 
 @dataclass
@@ -48,12 +48,32 @@ class ExtractionService:
         model: str = None,
         llm_client: LLMClient = None,
         agent_role: str = "extractor",
+        extractor_roles: List[str] = None,
+        merger_role: str = None,
+        reviewer_role: str = None,
+        review_enabled: bool = None,
     ):
         self.logger = logger.bind(module="ExtractionService")
         if schema is None:
             raise ValueError("ExtractionService 需要提供 schema")
         self.schema = schema
-        self.mode = "flat"
+        if extractor_roles is None:
+            try:
+                import settings
+                extractor_roles = list(getattr(settings, "EXTRACTOR_ROLES", ["extractor_a", "extractor_b"]) or ["extractor_a", "extractor_b"])
+                merger_role = merger_role or getattr(settings, "EXTRACT_MERGER_ROLE", "extract_merger")
+                reviewer_role = reviewer_role or getattr(settings, "EXTRACT_REVIEWER_ROLE", "extract_reviewer")
+                if review_enabled is None:
+                    review_enabled = bool(getattr(settings, "EXTRACT_REVIEW_ENABLED", True))
+            except Exception:
+                extractor_roles = ["extractor"]
+                merger_role = merger_role or "extract_merger"
+                reviewer_role = reviewer_role or "extract_reviewer"
+                if review_enabled is None:
+                    review_enabled = True
+        extractor_roles = [r for r in extractor_roles if r]
+        if not extractor_roles:
+            extractor_roles = [agent_role]
 
         if llm_client:
             self.llm_client = llm_client
@@ -62,14 +82,31 @@ class ExtractionService:
         else:
             self.llm_client = create_llm_client_for_agent(agent_role)
 
-        self._mode_strategy = GenericFlatMode(self.llm_client, self.schema)
+        if (len(extractor_roles) > 1 or review_enabled) and llm_client is None and model is None:
+            extractor_clients = {role: create_llm_client_for_agent(role) for role in extractor_roles}
+            merger_client = create_llm_client_for_agent(merger_role or "extract_merger")
+            reviewer_client = create_llm_client_for_agent(reviewer_role or "extract_reviewer") if review_enabled else None
+            self._mode_strategy = MultiAgentFlatMode(
+                extractor_clients=extractor_clients,
+                merger_client=merger_client,
+                schema=self.schema,
+                merger_role=merger_role or "extract_merger",
+                reviewer_client=reviewer_client,
+                reviewer_role=reviewer_role or "extract_reviewer",
+                review_enabled=bool(review_enabled),
+            )
+            self.mode = "flat_multi_agent"
+            self.llm_client = merger_client
+        else:
+            self._mode_strategy = GenericFlatMode(self.llm_client, self.schema)
+            self.mode = "flat"
         self.logger.info(
-            f"初始化完成: mode=flat, model={self.llm_client.config.model}, "
+            f"初始化完成: mode={self.mode}, model={self.llm_client.config.model}, "
             f"schema={getattr(self.schema, 'slug', '?')} ({len(self.schema.fields)}字段)"
         )
 
     def extract(self, paper_id: str, content: str, **kwargs) -> ExtractionOutput:
-        self.logger.info(f"开始提取: {paper_id} (flat)")
+        self.logger.info(f"开始提取: {paper_id} ({self.mode})")
         try:
             result = self._mode_strategy.extract(paper_id=paper_id, content=content, **kwargs)
             if result.success:

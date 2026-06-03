@@ -42,10 +42,11 @@ class JobHandle:
 
 
 class Job:
-    def __init__(self, job_type: str, title: str):
+    def __init__(self, job_type: str, title: str, fingerprint: str = ""):
         self.id = uuid.uuid4().hex[:12]
         self.type = job_type
         self.title = title
+        self.fingerprint = fingerprint
         self.status = "queued"  # queued/running/success/failed/cancelled
         self.done = 0
         self.total = 0
@@ -65,6 +66,7 @@ class Job:
                 "id": self.id,
                 "type": self.type,
                 "title": self.title,
+                "fingerprint": self.fingerprint,
                 "status": self.status,
                 "done": self.done,
                 "total": self.total,
@@ -87,7 +89,58 @@ class JobManager:
         self._lock = threading.Lock()
 
     def submit(self, job_type: str, title: str,
+               fn: Callable[[JobHandle], Any],
+               fingerprint: str = "") -> Job:
+        """Submit a job.
+
+        If fingerprint is provided and an equivalent queued/running job exists,
+        return the existing job instead of starting duplicate work.
+        """
+        if fingerprint:
+            with self._lock:
+                for existing in self._jobs.values():
+                    if (
+                        existing.fingerprint == fingerprint
+                        and existing.status in ("queued", "running")
+                    ):
+                        return existing
+        job = Job(job_type, title, fingerprint=fingerprint)
+        with self._lock:
+            self._jobs[job.id] = job
+        handle = JobHandle(job)
+
+        def runner():
+            with job._lock:
+                job.status = "running"
+                job.updated_at = datetime.now().isoformat(timespec="seconds")
+            handle.log(f"任务开始: {title}")
+            try:
+                result = fn(handle)
+                with job._lock:
+                    if job.cancel_requested:
+                        job.status = "cancelled"
+                    else:
+                        job.status = "success"
+                        if isinstance(result, dict):
+                            job.result = result
+                    job.updated_at = datetime.now().isoformat(timespec="seconds")
+                handle.log(f"任务结束: {job.status}")
+            except Exception as e:  # noqa: BLE001
+                with job._lock:
+                    job.status = "failed"
+                    job.error = str(e)
+                    job.updated_at = datetime.now().isoformat(timespec="seconds")
+                handle.log(f"任务异常: {e}")
+                handle.log(traceback.format_exc().splitlines()[-1])
+
+        t = threading.Thread(target=runner, daemon=True)
+        job._thread = t
+        t.start()
+        return job
+
+    def submit_unchecked(self, job_type: str, title: str,
                fn: Callable[[JobHandle], Any]) -> Job:
+        """Backward-compatible submit without fingerprint dedupe."""
         job = Job(job_type, title)
         with self._lock:
             self._jobs[job.id] = job

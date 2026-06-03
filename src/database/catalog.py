@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from datetime import datetime
@@ -39,6 +40,144 @@ EXTRACT_DONE = "done"
 EXTRACT_FAILED = "failed"
 EXTRACT_TOO_LARGE = "too_large"
 
+DB_USER_VERSION = 2
+
+
+def configure_connection(conn: sqlite3.Connection) -> sqlite3.Connection:
+    """Apply safety pragmas to every SQLite connection."""
+    conn.execute("PRAGMA busy_timeout=30000")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    return conn
+
+
+def _create_updated_at_trigger(conn: sqlite3.Connection, table: str, key_col: str) -> None:
+    conn.execute(f"""
+        CREATE TRIGGER IF NOT EXISTS trg_{table}_updated_at
+        AFTER UPDATE ON {table}
+        FOR EACH ROW
+        WHEN NEW.updated_at = OLD.updated_at
+        BEGIN
+            UPDATE {table} SET updated_at = CURRENT_TIMESTAMP WHERE {key_col} = NEW.{key_col};
+        END
+    """)
+
+
+def _create_status_guard(conn: sqlite3.Connection, table: str, col: str, allowed: set[str]) -> None:
+    values = ", ".join(repr(v) for v in sorted(allowed))
+    for op in ("INSERT", "UPDATE"):
+        trigger = f"trg_{table}_{col}_{op.lower()}_guard"
+        conn.execute(f"""
+            CREATE TRIGGER IF NOT EXISTS {trigger}
+            BEFORE {op} ON {table}
+            FOR EACH ROW
+            WHEN NEW.{col} IS NOT NULL AND NEW.{col} NOT IN ({values})
+            BEGIN
+                SELECT RAISE(ABORT, 'invalid {table}.{col}');
+            END
+        """)
+
+
+def migrate_state_db(db_path: Path) -> Dict[str, int]:
+    """Harden and repair the shared state database.
+
+    This is intentionally idempotent. It keeps existing rows, creates missing
+    indexes/triggers, and repairs historical orphan download_records by adding
+    placeholder batch rows instead of deleting operational history.
+    """
+    db_path = Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    current_version = 0
+    if db_path.exists():
+        probe = sqlite3.connect(db_path)
+        try:
+            current_version = int(probe.execute("PRAGMA user_version").fetchone()[0])
+        finally:
+            probe.close()
+    backup_path = None
+    if db_path.exists() and current_version < DB_USER_VERSION:
+        backup_dir = db_path.parent / "backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        backup_path = backup_dir / f"{db_path.stem}.{int(time.time())}.bak"
+        src = sqlite3.connect(db_path)
+        try:
+            dst = sqlite3.connect(backup_path)
+            try:
+                src.backup(dst)
+            finally:
+                dst.close()
+        finally:
+            src.close()
+
+    conn = sqlite3.connect(db_path, timeout=30)
+    conn.row_factory = sqlite3.Row
+    configure_connection(conn)
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        tables = {
+            r["name"] for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+
+        # Operational indexes.
+        if "pdf_files" in tables:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_filename ON pdf_files(filename)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_batch ON pdf_files(batch_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_pdf_data_id ON pdf_files(data_id)")
+            _create_updated_at_trigger(conn, "pdf_files", "id")
+            _create_status_guard(conn, "pdf_files", "status", {"pending", "uploaded", "downloaded", "failed"})
+        if "batches" in tables:
+            _create_updated_at_trigger(conn, "batches", "batch_id")
+            _create_status_guard(conn, "batches", "status", {"uploaded", "processing", "completed", "partial", "failed"})
+        if "download_records" in tables:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_dl_batch ON download_records(batch_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_dl_data_id ON download_records(data_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_dl_filename ON download_records(filename)")
+            _create_status_guard(conn, "download_records", "download_status", {"pending", "completed", "failed"})
+        if "papers" in tables:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_source_pdf ON papers(source_pdf)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_mineru_data_id ON papers(mineru_data_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_extract_json ON papers(extract_json)")
+            _create_updated_at_trigger(conn, "papers", "paper_id")
+            _create_status_guard(conn, "papers", "parse_status", {
+                PARSE_PENDING, PARSE_UPLOADED, PARSE_PROCESSING, PARSE_PARSED, PARSE_FAILED,
+            })
+            _create_status_guard(conn, "papers", "extract_status", {
+                EXTRACT_NONE, EXTRACT_DONE, EXTRACT_FAILED, EXTRACT_TOO_LARGE,
+            })
+
+        # Repair historical orphan download_records without data loss.
+        missing_batches = []
+        if {"download_records", "batches"}.issubset(tables):
+            missing_batches = conn.execute("""
+                SELECT d.batch_id, COUNT(*) AS n
+                FROM download_records d
+                LEFT JOIN batches b ON b.batch_id = d.batch_id
+                WHERE b.batch_id IS NULL
+                GROUP BY d.batch_id
+            """).fetchall()
+            for row in missing_batches:
+                conn.execute(
+                    "INSERT OR IGNORE INTO batches "
+                    "(batch_id, batch_index, file_count, status, access_url) "
+                    "VALUES (?, -1, ?, 'completed', NULL)",
+                    (row["batch_id"], row["n"]),
+                )
+
+        conn.execute(f"PRAGMA user_version={DB_USER_VERSION}")
+        conn.commit()
+        return {
+            "backup_created": int(bool(backup_path and backup_path.exists())),
+            "missing_batches_repaired": len(missing_batches),
+        }
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
 
 class PaperCatalog:
     """论文目录管理器 - 统一查看与更新全流程状态"""
@@ -55,8 +194,9 @@ class PaperCatalog:
     # 初始化
     # ------------------------------------------------------------------
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=30)
         conn.row_factory = sqlite3.Row
+        configure_connection(conn)
         return conn
 
     def _init_db(self):
@@ -95,6 +235,7 @@ class PaperCatalog:
                 "CREATE INDEX IF NOT EXISTS idx_papers_hash ON papers(file_hash)"
             )
             conn.commit()
+            migrate_state_db(self.db_path)
         finally:
             conn.close()
 
@@ -320,8 +461,8 @@ class PaperCatalog:
 
         覆盖以下情况：仅解析、仅提取、两者皆有。
         """
-        parsed_root = Path(parsed_dir or settings.PARSED_DIR)
-        extracted_root = Path(extracted_dir or settings.EXTRACTED_DIR)
+        parsed_root = Path(parsed_dir or settings.collection_parsed_dir(settings.DEFAULT_COLLECTION))
+        extracted_root = Path(extracted_dir or settings.collection_extracted_dir(settings.DEFAULT_COLLECTION))
 
         dl_index = self._download_record_index()
         stats = {"parsed": 0, "extracted": 0}
@@ -363,7 +504,7 @@ class PaperCatalog:
 
         # 2. 提取结果
         if extracted_root.exists():
-            for jf in sorted(extracted_root.glob("*.json")):
+            for jf in sorted(extracted_root.rglob("*.json")):
                 paper_id = jf.stem
                 count = 0
                 try:

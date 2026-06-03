@@ -12,7 +12,7 @@
 SPED 把这一步交给 LLM：
 
 1. **PDF → Markdown**：用 [MinerU](https://github.com/opendatalab/MinerU) 解析 PDF，得到带图表的 `full.md`。
-2. **自动设计 schema（多智能体）**：给一句领域简介 + 若干已解析论文，多个「提议者」分别读论文（含图/表标题）提出候选字段，「整合者」合并成一张单表，「评审者」查漏去冗、控制字段数量后定稿。
+2. **自动设计 schema（多智能体）**：给一句领域简介 + 若干已解析论文，默认 3 个 schema agent 独立阅读同一批样本论文（摘要/引言/实验或方法部分 + 图/表标题），各自产出一份完整 schema；`schema_merger` 合并多份 schema，`schema_reviewer` 审阅字段描述、格式、单位和可抽取性后定稿。
 3. **整篇提取 + 证据**：用该 schema 对每篇论文整篇抽取，输出扁平记录，**每个字段都带 `{value, evidence}`**——evidence 是论文原文中的原句/原短语（图表派生字段可用图注作证据），系统会逐条核验。
 
 ---
@@ -48,6 +48,17 @@ LLM_API_KEY=sk-xxxx
 # AGENT_PROPOSER_B_API_BASE=...
 # AGENT_PROPOSER_B_API_KEY=...
 
+# Schema 自动发现阶段默认 3 个 agent 独立阅读同一批样本，各自产出完整 schema
+# SCHEMA_AGENT_ROLES=schema_agent_a,schema_agent_b,schema_agent_c
+# SCHEMA_MERGER_ROLE=schema_merger
+# SCHEMA_REVIEWER_ROLE=schema_reviewer
+
+# 提取阶段默认 2 个 extractor + 合并 + 审阅
+# EXTRACTOR_ROLES=extractor_a,extractor_b
+# EXTRACT_MERGER_ROLE=extract_merger
+# EXTRACT_REVIEWER_ROLE=extract_reviewer
+# EXTRACT_REVIEW_ENABLED=true
+
 # 可选调参
 # LLM_MAX_OUTPUT_TOKENS=65536   # 推理模型给足额度，避免截断
 # SCHEMA_MIN_FIELDS=20
@@ -70,17 +81,18 @@ python -m webapp.app            # 启动后访问 http://localhost:8000
 
 四个步骤一站式完成：
 
-1. **① 解析 PDF**：从 `data/raw/pdfs` 选取（可全选/筛选）→ 一键解析。PDF 自动归类为
+1. **① 解析 PDF**：从 `data/collections/<collection>/pdfs` 选取（可全选/筛选）→ 一键解析。PDF 自动归类为
    **未解析 / 处理中 / 解析成功 / 解析失败 / 超大(不可解析)**；失败的可重新解析。
    超过 `MAX_PDF_SIZE_MB`（默认 20MB）的 PDF 不可上传；上传自动限速到 50 文件/分钟，规避
    MinerU 速率限制。后台任务实时显示进度。
 2. **② 设计 Schema**：两种方式——(A) 填领域名 + 引导 prompt，挑选（或随机抽取）几篇解析好的论文
-   → 多智能体自动设计字段表；(B) 直接上传符合规范的 schema JSON。
+   → 多 schema agent 独立设计完整 schema，再合并和审阅；(B) 直接上传符合规范的 schema JSON。
 3. **③ 提取数据**：选 schema + 论文（可全选）→ 整篇并行提取（并行度可在「设置」里配 `EXTRACT_CONCURRENCY`，默认 8）。
+   默认每篇论文由 `extractor_a` / `extractor_b` 独立抽取，`extract_merger` 合并，`extract_reviewer` 审阅 value/evidence。
 4. **④ 查看数据**：表格展示所有记录，**悬浮单元格即可看到原文证据与来源论文**，✓ 表示证据已核验。
 5. **⚙ 任务**：所有解析/设计/提取均为后台任务，顶部全局进度条 + 任务卡片实时显示进度、日志、取消。
-6. **🔧 设置**：网页内配置 MinerU(token/base) 与各 LLM 角色(proposer/consolidator/critic/extractor)的
-   model/base/key，以及提取并行度 `EXTRACT_CONCURRENCY`，写入 `.env` 并对新任务即时生效（API Key 脱敏显示，留空表示不修改；有任务运行时禁止修改）。
+6. **🔧 设置**：网页内配置默认 collection、MinerU(token/base)、基础 LLM、各 agent 角色端点、
+   schema/extraction 角色、并发与限额，写入 `.env` 并对新任务即时生效（API Key 脱敏显示，留空表示不修改；有任务运行时禁止修改）。
 
 > 同一时刻只允许一个解析任务，避免重复上传浪费 MinerU 额度。界面为浅色（白色系）主题。
 
@@ -108,28 +120,28 @@ python scripts/schema_pipeline.py list
 python scripts/schema_pipeline.py extract --slug <领域slug> --paper <paper_id>
 ```
 
-提取结果写入 `data/processed/extracted/<paper_id>.json`，每条记录的每个字段含 `{value, evidence}` 与证据核验统计。
+提取结果写入 `data/collections/<collection>/extracted/<schema_slug>/<paper_id>.json`，每条记录的每个字段含 `{value, evidence}` 与证据核验统计。
 
 ---
 
 ## 流程概览
 
 ```
-PDF ──MinerU──▶ data/processed/parsed/<id>/full.md (+images)
+PDF ──MinerU──▶ data/collections/<collection>/parsed/<id>/full.md (+images)
                        │
                        ▼
         ┌──────── 多智能体 schema 设计 ────────┐
-        │ proposer_a/b/c  → 候选字段(含图注)    │
-        │ consolidator    → 合并为单表草稿       │
-        │ critic          → 查漏去冗/控字段数     │
+        │ schema_agent_a/b/c → 各自完整 schema 草案 │
+        │ schema_merger      → 合并相近字段/描述    │
+        │ schema_reviewer    → 审阅可抽取性与格式   │
         └──────────────────┬───────────────────┘
                            ▼
-            data_schema/generated/<slug>.json
+            data/collections/<collection>/schemas/<slug>.json
                            │
                            ▼
-        extractor → 整篇扁平提取 {value, evidence}
+        extractor_a/b → merger → reviewer → {value, evidence}
                            ▼
-            data/processed/extracted/<id>.json
+            data/collections/<collection>/extracted/<slug>/<id>.json
 ```
 
 ---
@@ -164,10 +176,12 @@ sped/
 │   ├── llm/                 # OpenAI 兼容客户端 + 按角色工厂
 │   └── utils/
 ├── data/
-│   ├── raw/pdfs/            # 原始 PDF
-│   ├── processed/parsed/    # MinerU 输出(保留)
-│   └── processed/extracted/ # 结构化提取结果
-├── data_schema/generated/   # 自动设计的 schema
+│   ├── collections/<name>/
+│   │   ├── pdfs/            # 原始 PDF
+│   │   ├── parsed/          # MinerU 输出(full.md/images/tables)
+│   │   ├── schemas/         # collection-local schema
+│   │   └── extracted/       # 按 schema_slug 存结构化提取结果
+│   └── state/pdf_state.db   # 上传/解析/提取运行状态
 ├── docs/ARCHITECTURE.md     # 架构细节
 └── tests/                   # 单元测试
 ```
@@ -180,12 +194,33 @@ sped/
 
 | 角色 | 作用 |
 |------|------|
-| `proposer_a` / `proposer_b` / `proposer_c` | 分别阅读论文提出候选字段（轮转分配，鼓励观点多样） |
-| `consolidator` | 把候选字段合并成统一单表草稿 |
-| `critic` | 审查草稿：查漏、去冗、控制字段数、保留图表派生字段 |
-| `extractor` | 用定稿 schema 整篇抽取 |
+| `schema_agent_a` / `schema_agent_b` / `schema_agent_c` | 独立阅读同一批样本论文，各自产出完整 schema |
+| `schema_merger` | 合并多份 schema 草案，统一相近字段、描述、单位和提取格式 |
+| `schema_reviewer` | 审阅合并后的 schema，检查可抽取性、字段格式和记录定义 |
+| `extractor_a` / `extractor_b` / `extractor_c` | 多路提取角色，独立按 schema 抽取同一篇论文 |
+| `extract_merger` | 可选合并角色，合并多个 extractor 的候选记录并保留 evidence |
+| `extract_reviewer` | 审阅合并后的 records 与 evidence，删除或置空不被证据支持的值 |
 
 > 想让不同角色用不同模型家族，只需为对应 `AGENT_<ROLE>_*` 配上各自的 base/key/model。
+
+Schema 自动发现阶段默认：
+
+```ini
+SCHEMA_AGENT_ROLES=schema_agent_a,schema_agent_b,schema_agent_c
+SCHEMA_MERGER_ROLE=schema_merger
+SCHEMA_REVIEWER_ROLE=schema_reviewer
+```
+
+每个 schema agent 读取的是同一批样本论文上下文，优先包含摘要、引言、实验/方法部分和图表标题。
+
+提取阶段默认：
+
+```ini
+EXTRACTOR_ROLES=extractor_a,extractor_b
+EXTRACT_MERGER_ROLE=extract_merger
+EXTRACT_REVIEWER_ROLE=extract_reviewer
+EXTRACT_REVIEW_ENABLED=true
+```
 
 ---
 

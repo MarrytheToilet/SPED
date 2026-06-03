@@ -27,8 +27,8 @@ from settings import (
     MINERU_API_BASE,
     MINERU_HEADERS,
     MINERU_WEB_BASE,
-    PDF_DIR,
-    PARSED_DIR,
+    UPLOADS_DIR,
+    DEFAULT_COLLECTION,
     BATCH_SIZE,
     BATCH_MAX_TOTAL_MB,
     UPLOAD_CONFIG,
@@ -43,6 +43,7 @@ from settings import (
     DOWNLOAD_RETRY_BACKOFF_BASE,
     DOWNLOAD_RETRY_BACKOFF_MAX
 )
+import settings
 
 
 class PDFProcessor:
@@ -56,7 +57,7 @@ class PDFProcessor:
             db_path: 状态数据库路径
         """
         if db_path is None:
-            db_path = Path("data/uploads/pdf_state.db")
+            db_path = Path(UPLOADS_DIR) / "pdf_state.db"
         
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +74,9 @@ class PDFProcessor:
     
     def _init_db(self):
         """初始化状态数据库"""
-        conn = sqlite3.connect(self.db_path)
+        from src.database.catalog import configure_connection, migrate_state_db
+        conn = sqlite3.connect(self.db_path, timeout=30)
+        configure_connection(conn)
         
         # PDF文件表
         conn.execute("""
@@ -134,6 +137,7 @@ class PDFProcessor:
 
         conn.commit()
         conn.close()
+        migrate_state_db(self.db_path)
     
     def _get_file_hash(self, filepath: Path) -> str:
         """计算文件MD5哈希"""
@@ -154,14 +158,14 @@ class PDFProcessor:
             新PDF文件列表
         """
         if pdf_dir is None:
-            pdf_dir = PDF_DIR
+            pdf_dir = settings.collection_pdf_dir(DEFAULT_COLLECTION)
         
         pdf_dir = Path(pdf_dir)
         if not pdf_dir.exists():
             print(f"❌ PDF目录不存在: {pdf_dir}")
             return []
         
-        all_pdfs = list(pdf_dir.glob("*.pdf"))
+        all_pdfs = list(pdf_dir.rglob("*.pdf"))
         print(f"📂 扫描目录: {pdf_dir}")
         print(f"📄 发现 {len(all_pdfs)} 个PDF文件")
         
@@ -190,9 +194,9 @@ class PDFProcessor:
                 cur.execute("""
                     INSERT INTO pdf_files (filename, file_hash, file_size, status)
                     VALUES (?, ?, ?, 'pending')
-                """, (pdf.name, file_hash, file_size))
+                """, (settings.logical_pdf_name(pdf), file_hash, file_size))
                 new_pdfs.append(pdf)
-                print(f"  ✅ 新PDF: {pdf.name} ({file_size/1024/1024:.2f} MB)")
+                print(f"  ✅ 新PDF: {settings.logical_pdf_name(pdf)} ({file_size/1024/1024:.2f} MB)")
         
         conn.commit()
         conn.close()
@@ -276,6 +280,10 @@ class PDFProcessor:
         # 准备文件信息
         files_data = []
         for idx, pdf in enumerate(pdfs):
+            try:
+                record_name = settings.logical_pdf_name(pdf)
+            except ValueError:
+                record_name = pdf.name
             filename = pdf.name
             base_name = pdf.stem
             
@@ -287,6 +295,7 @@ class PDFProcessor:
             
             files_data.append({
                 "name": filename,
+                "record_name": record_name,
                 "data_id": data_id,
                 **FILE_CONFIG
             })
@@ -371,7 +380,7 @@ class PDFProcessor:
                                 SET batch_id = ?, data_id = ?, status = 'uploaded', 
                                     updated_at = CURRENT_TIMESTAMP
                                 WHERE filename = ?
-                            """, (batch_id, file_data["data_id"], pdf.name))
+                            """, (batch_id, file_data["data_id"], file_data["record_name"]))
                             conn.commit()
                             conn.close()
                             break
@@ -494,7 +503,7 @@ class PDFProcessor:
             下载结果统计
         """
         if output_dir is None:
-            output_dir = PARSED_DIR
+            output_dir = settings.collection_parsed_dir(DEFAULT_COLLECTION)
         
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -721,21 +730,26 @@ class PDFProcessor:
         """写入下载成功记录、更新 pdf_files、并更新统一论文目录"""
         conn = sqlite3.connect(self.db_path)
         try:
+            row = conn.execute(
+                "SELECT filename FROM pdf_files WHERE data_id = ?",
+                (data_id,),
+            ).fetchone()
+            source_pdf = row[0] if row else filename
             conn.execute(
                 """
                 INSERT OR REPLACE INTO download_records
                 (batch_id, data_id, filename, output_path, download_status)
                 VALUES (?, ?, ?, ?, 'completed')
                 """,
-                (batch_id, data_id, filename, str(paper_dir)),
+                (batch_id, data_id, source_pdf, str(paper_dir)),
             )
             conn.execute(
                 """
                 UPDATE pdf_files
                 SET status = 'downloaded', updated_at = CURRENT_TIMESTAMP
-                WHERE filename = ?
+                WHERE data_id = ? OR filename = ?
                 """,
-                (filename,),
+                (data_id, filename),
             )
             conn.commit()
         finally:
@@ -748,7 +762,7 @@ class PDFProcessor:
             char_count=char_count,
             batch_id=batch_id,
             mineru_data_id=data_id,
-            source_pdf=filename,
+            source_pdf=source_pdf,
         )
 
     def _record_download_failure(
@@ -756,12 +770,26 @@ class PDFProcessor:
         paper_dir: Path, error: str
     ) -> None:
         """记录下载/解析失败到统一论文目录"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT filename FROM pdf_files WHERE data_id = ?",
+                (data_id,),
+            ).fetchone()
+            source_pdf = row[0] if row else filename
+            conn.execute(
+                "UPDATE pdf_files SET status='failed', updated_at=CURRENT_TIMESTAMP WHERE data_id=? OR filename=?",
+                (data_id, filename),
+            )
+            conn.commit()
+        finally:
+            conn.close()
         self.catalog.mark_parse_failed(
             paper_id=Path(paper_dir).name,
             error=error,
             batch_id=batch_id,
             mineru_data_id=data_id,
-            source_pdf=filename,
+            source_pdf=source_pdf,
         )
 
     def _download_and_extract(
@@ -891,7 +919,7 @@ class PDFProcessor:
             下载结果统计
         """
         if output_dir is None:
-            output_dir = PARSED_DIR
+            output_dir = settings.collection_parsed_dir(DEFAULT_COLLECTION)
         
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -1122,7 +1150,7 @@ class PDFProcessor:
 
 # ==================== 便捷函数 ====================
 
-def quick_upload(pdf_dir: Path = None) -> List[str]:
+def quick_upload(pdf_dir: Path = None, collection: str = None) -> List[str]:
     """
     快速上传：扫描新PDF并上传
     
@@ -1130,6 +1158,8 @@ def quick_upload(pdf_dir: Path = None) -> List[str]:
         batch_id列表
     """
     processor = PDFProcessor()
+    if pdf_dir is None:
+        pdf_dir = settings.collection_pdf_dir(collection or DEFAULT_COLLECTION)
     
     # 扫描新PDF
     new_pdfs = processor.scan_new_pdfs(pdf_dir)
@@ -1184,7 +1214,7 @@ def quick_status(batch_id: str = None) -> None:
             print(f"  访问地址: {batch['access_url']}")
 
 
-def quick_download(batch_id: str, output_dir: Path = None) -> bool:
+def quick_download(batch_id: str, output_dir: Path = None, collection: str = None) -> bool:
     """
     快速下载：下载批次结果
     
@@ -1196,11 +1226,14 @@ def quick_download(batch_id: str, output_dir: Path = None) -> bool:
         是否成功
     """
     processor = PDFProcessor()
+    if output_dir is None:
+        output_dir = settings.collection_parsed_dir(collection or DEFAULT_COLLECTION)
     result = processor.download_batch(batch_id, output_dir)
     return result.get("success", False)
 
 
-def quick_download_parallel(batch_id: str, output_dir: Path = None, max_workers: int = 4) -> bool:
+def quick_download_parallel(batch_id: str, output_dir: Path = None, max_workers: int = 4,
+                            collection: str = None) -> bool:
     """
     快速并行下载：并行下载批次结果
     
@@ -1213,11 +1246,14 @@ def quick_download_parallel(batch_id: str, output_dir: Path = None, max_workers:
         是否成功
     """
     processor = PDFProcessor()
+    if output_dir is None:
+        output_dir = settings.collection_parsed_dir(collection or DEFAULT_COLLECTION)
     result = processor.download_batch_parallel(batch_id, output_dir, max_workers)
     return result.get("success", False)
 
 
-def quick_download_all(output_dir: Path = None, max_workers: int = 4) -> Dict[str, Any]:
+def quick_download_all(output_dir: Path = None, max_workers: int = 4,
+                       collection: str = None) -> Dict[str, Any]:
     """
     快速批量下载：下载所有未完成的批次
     
@@ -1229,6 +1265,8 @@ def quick_download_all(output_dir: Path = None, max_workers: int = 4) -> Dict[st
         下载统计
     """
     processor = PDFProcessor()
+    if output_dir is None:
+        output_dir = settings.collection_parsed_dir(collection or DEFAULT_COLLECTION)
     return processor.download_all_batches(output_dir, max_workers)
 
 
@@ -1263,6 +1301,7 @@ def main():
     # upload
     upload_parser = subparsers.add_parser('upload', help='上传PDF')
     upload_parser.add_argument('--dir', type=Path, help='PDF目录')
+    upload_parser.add_argument('--collection', default=None, help='主题 collection')
     
     # status
     status_parser = subparsers.add_parser('status', help='查询状态')
@@ -1272,6 +1311,7 @@ def main():
     download_parser = subparsers.add_parser('download', help='下载结果')
     download_parser.add_argument('batch_id', help='批次ID')
     download_parser.add_argument('--output', type=Path, help='输出目录')
+    download_parser.add_argument('--collection', default=None, help='主题 collection')
     
     # stats
     stats_parser = subparsers.add_parser('stats', help='显示统计')
@@ -1279,6 +1319,7 @@ def main():
     # scan
     scan_parser = subparsers.add_parser('scan', help='扫描新PDF')
     scan_parser.add_argument('--dir', type=Path, help='PDF目录')
+    scan_parser.add_argument('--collection', default=None, help='主题 collection')
     
     args = parser.parse_args()
     
@@ -1288,16 +1329,17 @@ def main():
     
     try:
         if args.action == 'upload':
-            quick_upload(args.dir)
+            quick_upload(args.dir, args.collection)
         elif args.action == 'status':
             quick_status(args.batch_id)
         elif args.action == 'download':
-            quick_download(args.batch_id, args.output)
+            quick_download(args.batch_id, args.output, args.collection)
         elif args.action == 'stats':
             show_stats()
         elif args.action == 'scan':
             processor = PDFProcessor()
-            processor.scan_new_pdfs(args.dir)
+            scan_dir = args.dir or settings.collection_pdf_dir(args.collection or DEFAULT_COLLECTION)
+            processor.scan_new_pdfs(scan_dir)
         
         return 0
     

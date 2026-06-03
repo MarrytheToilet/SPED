@@ -1,9 +1,10 @@
 """
-生成 schema 的存储：保存/加载/列出 data_schema/generated/<slug>.json
+生成 schema 的存储：保存/加载/列出 data/collections/<collection>/schemas/<slug>.json
 """
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -12,13 +13,21 @@ from loguru import logger
 from .models import GeneratedSchema
 
 
-def _generated_dir() -> Path:
+def _safe_collection(collection: str = "") -> str:
+    raw = (collection or "").strip().replace("\\", "/").strip("/")
+    parts = [p for p in raw.split("/") if p and p not in (".", "..")]
+    return "/".join(parts)
+
+
+def _generated_dir(collection: str = "") -> Path:
     try:
         import settings
-        base = Path(settings.SCHEMA_DIR)
+        collection = _safe_collection(collection or getattr(settings, "DEFAULT_COLLECTION", ""))
+        d = settings.collection_schema_dir(collection)
     except Exception:
-        base = Path(__file__).parent.parent.parent / "data_schema"
-    d = base / "generated"
+        base = Path(__file__).parent.parent.parent / "data" / "collections"
+        collection = _safe_collection(collection)
+        d = base / collection / "schemas"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -26,8 +35,9 @@ def _generated_dir() -> Path:
 class SchemaStore:
     """生成 schema 的文件存储。"""
 
-    def __init__(self, directory: Optional[Path] = None):
-        self.dir = Path(directory) if directory else _generated_dir()
+    def __init__(self, directory: Optional[Path] = None, collection: str = ""):
+        self.collection = _safe_collection(collection)
+        self.dir = Path(directory) if directory else _generated_dir(self.collection)
         self.dir.mkdir(parents=True, exist_ok=True)
         self.logger = logger.bind(module="SchemaStore")
 
@@ -36,8 +46,10 @@ class SchemaStore:
 
     def save(self, schema: GeneratedSchema) -> Path:
         path = self.path_for(schema.slug)
-        with open(path, "w", encoding="utf-8") as f:
+        tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(schema.to_dict(), f, ensure_ascii=False, indent=2)
+        os.replace(tmp, path)
         self.logger.info(f"已保存 schema: {path} ({len(schema.fields)} 字段)")
         return path
 

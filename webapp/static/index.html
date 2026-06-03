@@ -27,6 +27,7 @@
   button.btn{background:var(--acc);color:#fff;border:none;border-radius:7px;padding:8px 14px;cursor:pointer;font-size:13px}
   button.btn:hover{filter:brightness(.96)}
   button.btn.sec{background:var(--panel2);color:var(--fg);border:1px solid var(--bd)}
+  button.btn.danger{background:var(--err);color:#fff}
   button.btn:disabled{opacity:.5;cursor:not-allowed}
   input,textarea,select{background:#fff;border:1px solid var(--bd);color:var(--fg);border-radius:6px;padding:7px 9px;font-size:13px}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
@@ -98,6 +99,11 @@
   <button data-tab="jobs">⚙ 任务</button>
   <button data-tab="settings">🔧 设置</button>
 </div>
+<div class="row" style="padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--bd)">
+  <label style="margin:0">主题文件夹 / Collection</label>
+  <select id="collectionSel" style="min-width:220px" onchange="changeCollection()"></select>
+  <span class="mut">对应 <code>data/collections/&lt;主题&gt;/pdfs/</code>。</span>
+</div>
 <main>
 
 <!-- ① 解析 -->
@@ -121,11 +127,27 @@
         <button class="btn sec" onclick="pdfSelectAll(false)">清空</button>
         <button class="btn" id="parseBtn" onclick="startParse()">▶ 解析所选</button>
         <button class="btn" onclick="parseAllUnparsed()">▶▶ 解析全部未解析</button>
+        <button class="btn sec" onclick="toggleCleanupPanel()">清理管理</button>
         <button class="btn sec" onclick="refreshPdfs()">⟳ 刷新</button>
       </div>
     </div>
-    <p class="mut" style="margin:8px 0 0">勾选未解析 / 解析失败的 PDF 后点击「解析所选」。失败的 PDF 可重新解析；
+    <p class="mut" style="margin:8px 0 0">任意状态都可勾选；「解析所选」只会提交未解析 / 解析失败的 PDF。清理功能在管理面板中，需要输入当前主题名确认；
       <strong id="sizeHint"></strong></p>
+    <div id="cleanupPanel" class="hint" style="display:none;margin-top:10px;border-color:#f0c6bd;background:#fff7f5;color:#693024">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <b>清理管理</b>
+          <div class="mut">清理会删除原始 PDF；如果已有解析/提取结果，也会删除对应 parsed 与 extracted 产物。请输入当前主题名后才能执行。</div>
+        </div>
+        <button class="btn sec" onclick="toggleCleanupPanel()">收起</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label style="margin:0">确认主题名</label>
+        <input id="cleanupConfirm" placeholder="输入当前主题名">
+        <button class="btn danger" onclick="deleteSelectedPdfs()">清理所选</button>
+        <button class="btn sec" onclick="deleteVisiblePdfs()">清理当前筛选</button>
+      </div>
+    </div>
     <div class="tablewrap" style="margin-top:10px">
       <table><thead><tr>
         <th style="width:30px"><input type="checkbox" onclick="pdfSelectAll(this.checked)"></th>
@@ -191,6 +213,17 @@
     </div>
     <div id="uSchemaMsg" class="mut" style="margin-top:8px"></div>
   </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <b>Schema 管理</b>
+      <button class="btn sec" onclick="loadSchemas()">刷新</button>
+    </div>
+    <p class="mut" style="margin:6px 0 8px">可把 schema 加载到上方 JSON 编辑框后修改保存；删除会先检查是否已有提取结果引用。</p>
+    <div class="tablewrap" style="max-height:260px">
+      <table><thead><tr><th>slug</th><th>领域</th><th style="width:80px">字段</th><th style="width:240px">操作</th></tr></thead>
+      <tbody id="schemaManageBody"></tbody></table>
+    </div>
+  </div>
 </section>
 
 <!-- ③ 提取 -->
@@ -251,6 +284,15 @@
 <section id="tab-settings" hidden>
   <div class="hint" style="margin-bottom:14px">在此配置各 API 端点。API Key 留空表示「不修改」。有任务运行时无法保存。修改后立即对新任务生效。</div>
   <div class="card">
+    <b>数据目录 / Collection</b>
+    <div class="setgrid" style="margin-top:10px">
+      <div><label>默认主题</label><input id="sDefaultCollection" style="width:100%" placeholder="人工关节材料摩擦学"></div>
+      <div class="full"><label>Collections 根目录</label><input id="sCollectionsDir" style="width:100%" disabled></div>
+      <div class="full"><label>状态库</label><input id="sStateDb" style="width:100%" disabled></div>
+    </div>
+    <p class="mut" style="margin:6px 0 0">数据按 <code>data/collections/&lt;主题&gt;/</code> 隔离；状态库集中保存任务状态。修改默认主题不会移动已有文件。</p>
+  </div>
+  <div class="card">
     <b>MinerU（PDF 解析）</b>
     <div class="setgrid" style="margin-top:10px">
       <div class="full"><label>API Base</label><input id="sMineruBase" style="width:100%" placeholder="https://mineru.net/api/v4"></div>
@@ -273,9 +315,25 @@
   <div class="card">
     <b>性能 / 限额</b>
     <div class="setgrid" style="margin-top:10px">
+      <div><label>单个 PDF 上限 MB</label><input id="sMaxPdfMb" type="number" min="1" max="200" style="width:100%" placeholder="20"></div>
+      <div><label>处理中超时小时</label><input id="sStaleHours" type="number" min="1" max="720" style="width:100%" placeholder="12"></div>
+      <div><label>MinerU 上传速率/分钟</label><input id="sUploadRate" type="number" min="1" max="50" style="width:100%" placeholder="50"></div>
+      <div><label>LLM 全局并发（所有任务总和）</label><input id="sLlmInflight" type="number" min="1" max="64" style="width:100%" placeholder="8"></div>
       <div><label>提取并发数（同时处理几篇，1–32）</label><input id="sExtractConc" type="number" min="1" max="32" style="width:100%" placeholder="8"></div>
     </div>
     <p class="mut" style="margin:6px 0 0">并发越高越快，但更易触发 LLM 速率限制；DeepSeek 建议 8–16。</p>
+  </div>
+  <div class="card">
+    <b>流程角色</b>
+    <div class="setgrid" style="margin-top:10px">
+      <div class="full"><label>Schema agent roles（默认 3 个）</label><input id="sSchemaAgents" style="width:100%" placeholder="schema_agent_a,schema_agent_b,schema_agent_c"></div>
+      <div><label>Schema merger role</label><input id="sSchemaMerger" style="width:100%" placeholder="schema_merger"></div>
+      <div><label>Schema reviewer role</label><input id="sSchemaReviewer" style="width:100%" placeholder="schema_reviewer"></div>
+      <div class="full"><label>Extractor roles（默认 2 个）</label><input id="sExtractorRoles" style="width:100%" placeholder="extractor_a,extractor_b"></div>
+      <div><label>Extract merger role</label><input id="sExtractMerger" style="width:100%" placeholder="extract_merger"></div>
+      <div><label>Extract reviewer role</label><input id="sExtractReviewer" style="width:100%" placeholder="extract_reviewer"></div>
+      <div><label>提取 reviewer</label><select id="sExtractReviewEnabled" style="width:100%"><option value="true">开启</option><option value="false">关闭</option></select></div>
+    </div>
   </div>
   <div class="row" style="justify-content:flex-end">
     <button class="btn sec" onclick="loadSettings()">↺ 重置</button>
@@ -288,7 +346,7 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let pdfData={items:[],counts:{}}, pdfFilter='all', pdfSelected=new Set();
 let parsedPapers=[], paperSel={design:new Set(),extract:new Set()};
-let schemas=[], settingsData=null;
+let schemas=[], settingsData=null, collections=[], currentCollection='';
 const CATNAME={unparsed:'未解析',processing:'处理中',parsed:'解析成功',failed:'解析失败',too_large:'超大·不可解析'};
 
 // tabs
@@ -304,8 +362,14 @@ $$('.tabs button').forEach(b=>b.onclick=()=>{
 
 async function api(url,opt){const r=await fetch(url,opt);if(!r.ok){let d='';try{d=(await r.json()).detail}catch(e){}throw new Error(d||r.statusText)}return r.json()}
 
+async function loadCollections(){const r=await api('/api/collections');collections=r.collections||[];
+  if(!currentCollection&&collections.length)currentCollection=collections[0].name||'';
+  $('#collectionSel').innerHTML=collections.map(c=>`<option value="${esc(c.name||'')}">${esc(c.label||c.name||'默认')} · ${c.pdf_count||0}</option>`).join('');
+  $('#collectionSel').value=currentCollection}
+function changeCollection(){currentCollection=$('#collectionSel').value;pdfSelected.clear();paperSel.design.clear();paperSel.extract.clear();refreshPdfs();loadParsed();loadSchemas();loadData(0)}
+
 // ---- ① PDFs ----
-async function refreshPdfs(){pdfData=await api('/api/pdfs');renderPdfStats();renderPdfs();
+async function refreshPdfs(){pdfData=await api('/api/pdfs?'+new URLSearchParams({collection:currentCollection||''}));renderPdfStats();renderPdfs();
   $('#sizeHint').textContent='超过 '+(pdfData.max_pdf_size_mb||20)+'MB 的 PDF 标记为「超大」，不可上传解析。'}
 function renderPdfStats(){const c=pdfData.counts;
   $('#pdfStats').innerHTML=[['总计',pdfData.total,''],['未解析',c.unparsed,'unparsed'],
@@ -317,28 +381,45 @@ $('#pdfFilter').onclick=e=>{if(e.target.dataset.f){pdfFilter=e.target.dataset.f;
 function visiblePdfs(){return pdfData.items.filter(i=>pdfFilter==='all'||i.category===pdfFilter)}
 function selectablePdf(i){return i.category==='unparsed'||i.category==='failed'}
 function renderPdfs(){const rows=visiblePdfs();
-  $('#pdfBody').innerHTML=rows.length?rows.map(i=>{const dis=!selectablePdf(i);return `<tr class="${dis?'disabled':''}">
-    <td><input type="checkbox" ${dis?'disabled':''} ${pdfSelected.has(i.filename)?'checked':''} onclick="togglePdf('${esc(i.filename)}',this.checked)"></td>
+  $('#pdfBody').innerHTML=rows.length?rows.map(i=>`<tr>
+    <td><input type="checkbox" ${pdfSelected.has(i.filename)?'checked':''} onclick="togglePdf('${esc(i.filename)}',this.checked)"></td>
     <td>${esc(i.filename)}</td><td class="mut">${i.size_mb} MB</td>
     <td><span class="pill ${i.category}">${CATNAME[i.category]}</span></td>
-  </tr>`}).join(''):'<tr><td colspan=4 class="empty">无</td></tr>';updatePdfSel()}
+  </tr>`).join(''):'<tr><td colspan=4 class="empty">无</td></tr>';updatePdfSel()}
 function esc(s){return (s+'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}
 function togglePdf(n,c){c?pdfSelected.add(n):pdfSelected.delete(n);updatePdfSel()}
-function pdfSelectAll(on){visiblePdfs().forEach(i=>{if(selectablePdf(i))on?pdfSelected.add(i.filename):pdfSelected.delete(i.filename)});renderPdfs()}
+function pdfSelectAll(on){visiblePdfs().forEach(i=>on?pdfSelected.add(i.filename):pdfSelected.delete(i.filename));renderPdfs()}
 function updatePdfSel(){$('#pdfSel').textContent='已选 '+pdfSelected.size}
 async function startParse(){if(!pdfSelected.size)return alert('请先勾选可解析的 PDF（未解析/解析失败）');
+  const allowed=new Set(pdfData.items.filter(selectablePdf).map(i=>i.filename));
+  const names=[...pdfSelected].filter(n=>allowed.has(n));
+  if(!names.length)return alert('所选 PDF 中没有可解析项。只有未解析 / 解析失败可以提交解析。');
   const r=await api('/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({filenames:[...pdfSelected]})});
+    body:JSON.stringify({filenames:names,collection:currentCollection||null})});
   alert('已提交解析任务：'+r.count+' 个 PDF\n任务ID '+r.job_id);pdfSelected.clear();gotoJobs()}
+function toggleCleanupPanel(){const p=$('#cleanupPanel');p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block')$('#cleanupConfirm').placeholder='输入：'+(currentCollection||'当前主题')}
+async function deletePdfNames(names,label){names=[...new Set(names)].filter(Boolean);if(!names.length)return alert('没有可清理的 PDF');
+  const confirmText=$('#cleanupConfirm')?$('#cleanupConfirm').value.trim():'';
+  const expected=currentCollection||'';
+  if(confirmText!==expected)return alert('请先在清理管理中输入完整主题名：'+expected);
+  if(!confirm('将清理 '+names.length+' 个 PDF（'+label+'）。\\n会删除原始 PDF；如果已有解析/提取结果，也会一并删除。\\n\\n确认主题：'+expected+'\\n继续？'))return;
+  const r=await api('/api/pdfs/delete',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({filenames:names,collection:currentCollection||null,delete_files:true,force:true,confirm_text:confirmText})});
+  alert('清理完成：文件 '+r.deleted_files+'，状态 '+r.deleted_state+'，parsed '+r.deleted_parsed+'，extracted '+r.deleted_extracted+
+    (r.skipped&&r.skipped.length?'\\n跳过 '+r.skipped.length+' 个':''));
+  names.forEach(n=>pdfSelected.delete(n));refreshPdfs();loadParsed();loadData(0)}
+function deleteSelectedPdfs(){deletePdfNames([...pdfSelected],'所选项')}
+function deleteVisiblePdfs(){deletePdfNames(visiblePdfs().map(i=>i.filename),'当前筛选')}
 async function parseAllUnparsed(){const n=pdfData.counts.unparsed||0;
   if(!n)return alert('没有未解析的 PDF');
   if(!confirm('将解析全部 '+n+' 个未解析 PDF（限速 50 文件/分钟），会消耗 MinerU 额度，确认？'))return;
   const r=await api('/api/parse',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({all_unparsed:true})});
+    body:JSON.stringify({all_unparsed:true,collection:currentCollection||null})});
   alert('已提交解析任务：'+r.count+' 个 PDF\n任务ID '+r.job_id);gotoJobs()}
 
 // ---- parsed papers ----
-async function loadParsed(){const r=await api('/api/parsed');parsedPapers=r.papers;renderPapers('design');renderPapers('extract')}
+async function loadParsed(){const r=await api('/api/parsed/by_collection?'+new URLSearchParams({collection:currentCollection||''}));parsedPapers=r.papers;renderPapers('design');renderPapers('extract')}
 function renderPapers(which){const body=$('#'+(which==='design'?'dPaperBody':'xPaperBody'));
   body.innerHTML=parsedPapers.length?parsedPapers.map(p=>`<tr>
     <td><input type="checkbox" ${paperSel[which].has(p.paper_id)?'checked':''} onclick="togglePaper('${which}','${esc(p.paper_id)}',this.checked)"></td>
@@ -354,7 +435,7 @@ function updatePaperSel(w){$('#'+(w==='design'?'dPaperSel':'xPaperSel')).textCon
 async function startDesign(){const domain=$('#dDomain').value.trim();if(!domain)return alert('请填写领域名称');
   const body={domain,description:$('#dDesc').value.trim(),
     min_fields:+$('#dMin').value,max_fields:+$('#dMax').value,sample_size:+$('#dSample').value,
-    random_pick:$('#dRandom').checked,paper_ids:paperSel.design.size?[...paperSel.design]:null};
+    random_pick:$('#dRandom').checked,paper_ids:paperSel.design.size?[...paperSel.design]:null,collection:currentCollection||null};
   const r=await api('/api/schema/design',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   alert('已提交设计任务：'+r.job_id);gotoJobs()}
 
@@ -380,29 +461,50 @@ async function uploadSchema(){const txt=$('#uSchemaJson').value.trim();if(!txt)r
   const msg=$('#uSchemaMsg');msg.textContent='上传中…';
   try{
     const r=await api('/api/schema/upload',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({schema_def:obj,overwrite:$('#uOverwrite').checked})});
+      body:JSON.stringify({schema_def:obj,overwrite:$('#uOverwrite').checked,collection:currentCollection||null})});
     msg.innerHTML='✅ 已保存 schema「'+esc(r.slug)+'」，共 '+r.fields+' 字段。'+
       (r.warnings&&r.warnings.length?'<br><span style="color:#b26b00">提示：'+r.warnings.map(esc).join('；')+'</span>':'');
     loadSchemas();
   }catch(e){msg.innerHTML='<span style="color:#c0392b">❌ '+esc(e.message||'上传失败')+'</span>'}}
 
 // ---- schemas ----
-async function loadSchemas(){const r=await api('/api/schemas');schemas=r.schemas;
+async function loadSchemas(){const r=await api('/api/schemas?'+new URLSearchParams({collection:currentCollection||''}));schemas=r.schemas;
   const opt=schemas.map(s=>`<option value="${esc(s.slug)}">${esc(s.slug)} · ${s.fields}字段</option>`).join('');
   $('#xSchema').innerHTML=opt||'<option value="">（无，请先设计）</option>';
   $('#vSchema').innerHTML='<option value="">全部</option>'+opt;
+  renderSchemaManage();
   renderSchemaInfo()}
+function renderSchemaManage(){const body=$('#schemaManageBody');if(!body)return;
+  body.innerHTML=schemas.length?schemas.map(s=>`<tr>
+    <td>${esc(s.slug)}</td><td>${esc(s.domain||'')}</td><td>${s.fields}</td>
+    <td>
+      <button class="btn sec" onclick="editSchema('${esc(s.slug)}')">编辑</button>
+      <button class="btn sec" onclick="cloneSchema('${esc(s.slug)}')">复制</button>
+      <button class="btn sec" onclick="deleteSchema('${esc(s.slug)}')">删除</button>
+    </td>
+  </tr>`).join(''):'<tr><td colspan="4" class="empty">暂无 schema</td></tr>'}
+async function editSchema(slug){const s=await api('/api/schemas/'+encodeURIComponent(slug)+'?'+new URLSearchParams({collection:currentCollection||''}));
+  $('#uSchemaJson').value=JSON.stringify(s,null,2);$('#uOverwrite').checked=true;
+  $('#uSchemaMsg').textContent='已加载 schema「'+slug+'」到编辑框，修改后点击上传保存。'}
+async function cloneSchema(slug){const ns=prompt('复制为新的 slug：',slug+'-copy');if(!ns)return;
+  try{const r=await api('/api/schemas/'+encodeURIComponent(slug)+'/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_slug:ns,collection:currentCollection||null})});
+    alert('已复制为 '+r.slug);loadSchemas()}catch(e){alert(e.message||'复制失败')}}
+async function deleteSchema(slug){if(!confirm('删除 schema「'+slug+'」？如已有提取结果引用会被阻止。'))return;
+  const q=new URLSearchParams({collection:currentCollection||''});
+  try{await api('/api/schemas/'+encodeURIComponent(slug)+'?'+q,{method:'DELETE'});alert('已删除');loadSchemas()}
+  catch(e){if(confirm((e.message||'删除失败')+'\\n是否强制删除？')){q.set('force','true');await api('/api/schemas/'+encodeURIComponent(slug)+'?'+q,{method:'DELETE'});alert('已强制删除');loadSchemas()}}}
 $('#xSchema')&&($('#xSchema').onchange=renderSchemaInfo);
 function renderSchemaInfo(){const s=schemas.find(x=>x.slug===$('#xSchema').value);
   if(!s){$('#xSchemaInfo').innerHTML='';return}
   $('#xSchemaInfo').innerHTML=`<div>记录定义：${esc(s.record_definition||'')}</div>`+
+    `<div class="mut" style="margin:6px 0 4px"><span class="field-chip">灰色：正文/表格字段</span><span class="field-chip fig">紫色：图、图注或曲线读数字段</span></div>`+
     s.field_list.map(f=>`<span class="field-chip ${f.from_figure?'fig':''}">${esc(f.name)}${f.unit?' ['+esc(f.unit)+']':''}</span>`).join('')}
 
 // ---- ③ extract ----
 async function startExtract(){const slug=$('#xSchema').value;if(!slug)return alert('请选择 schema');
   if(!paperSel.extract.size)return alert('请勾选论文');
   const r=await api('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({slug,paper_ids:[...paperSel.extract]})});
+    body:JSON.stringify({slug,paper_ids:[...paperSel.extract],collection:currentCollection||null})});
   alert('已提交提取任务：'+r.count+' 篇\n任务ID '+r.job_id);gotoJobs()}
 
 // ---- ④ data ----
@@ -412,7 +514,7 @@ async function loadData(offset){
   if(offset===undefined)offset=0;
   const slug=$('#vSchema').value;
   const limit=parseInt($('#pgSize').value)||100;
-  const d=await api('/api/data?'+new URLSearchParams({slug:slug||'',offset:offset,limit:limit}));
+  const d=await api('/api/data?'+new URLSearchParams({slug:slug||'',collection:currentCollection||'',offset:offset,limit:limit}));
   DATA={rows:d.rows,cols:d.columns,total:d.count,offset:d.offset,limit:d.limit,slug:slug};
   $('#vCount').textContent=d.count+' 条记录';
   renderData();renderPager();}
@@ -476,6 +578,9 @@ document.addEventListener('toggle',async e=>{if(e.target.tagName==='DETAILS'&&e.
 
 // ---- 🔧 settings ----
 async function loadSettings(){settingsData=await api('/api/settings');const d=settingsData;
+  $('#sDefaultCollection').value=(d.data&&d.data.default_collection)||'';
+  $('#sCollectionsDir').value=(d.data&&d.data.collections_dir)||'';
+  $('#sStateDb').value=(d.data&&d.data.state_db)||'';
   $('#sMineruBase').value=d.mineru.api_base||'';
   $('#sMineruToken').value='';$('#sMineruTokMask').textContent=d.mineru.token_set?(' 当前 '+d.mineru.token_masked):' （未设置）';
   $('#sLlmModel').value=d.llm.model||'';$('#sLlmBase').value=d.llm.api_base||'';
@@ -487,11 +592,37 @@ async function loadSettings(){settingsData=await api('/api/settings');const d=se
       <div><label>API Base</label><input data-r="${esc(a.role)}" data-k="api_base" style="width:100%" value="${esc(a.api_base||'')}" placeholder="继承基础"></div>
       <div><label>API Key${a.api_key_set?(' 当前 '+esc(a.api_key_masked)):''}</label><input data-r="${esc(a.role)}" data-k="api_key" type="password" style="width:100%" placeholder="${a.api_key_set?'留空不改':'继承基础'}"></div>
     </div></div>`).join('');
-  $('#sExtractConc').value=(d.limits&&d.limits.extract_concurrency)||8}
+  const l=d.limits||{};
+  $('#sMaxPdfMb').value=l.max_pdf_size_mb||20;
+  $('#sStaleHours').value=l.processing_stale_hours||12;
+  $('#sUploadRate').value=l.upload_rate_per_min||50;
+  $('#sLlmInflight').value=l.llm_max_inflight||8;
+  $('#sExtractConc').value=l.extract_concurrency||8;
+  $('#sSchemaAgents').value=l.schema_agent_roles||'';
+  $('#sSchemaMerger').value=l.schema_merger_role||'';
+  $('#sSchemaReviewer').value=l.schema_reviewer_role||'';
+  $('#sExtractorRoles').value=l.extractor_roles||'';
+  $('#sExtractMerger').value=l.extract_merger_role||'';
+  $('#sExtractReviewer').value=l.extract_reviewer_role||'';
+  $('#sExtractReviewEnabled').value=String(l.extract_review_enabled!==false)}
 async function saveSettings(){
   const payload={mineru:{api_base:$('#sMineruBase').value.trim()},
     llm:{model:$('#sLlmModel').value.trim(),api_base:$('#sLlmBase').value.trim()},agents:[],
-    limits:{extract_concurrency:+$('#sExtractConc').value||8}};
+    limits:{
+      default_collection:$('#sDefaultCollection').value.trim(),
+      max_pdf_size_mb:+$('#sMaxPdfMb').value||20,
+      processing_stale_hours:+$('#sStaleHours').value||12,
+      upload_rate_per_min:+$('#sUploadRate').value||50,
+      llm_max_inflight:+$('#sLlmInflight').value||8,
+      extract_concurrency:+$('#sExtractConc').value||8,
+      schema_agent_roles:$('#sSchemaAgents').value.trim(),
+      schema_merger_role:$('#sSchemaMerger').value.trim(),
+      schema_reviewer_role:$('#sSchemaReviewer').value.trim(),
+      extractor_roles:$('#sExtractorRoles').value.trim(),
+      extract_merger_role:$('#sExtractMerger').value.trim(),
+      extract_reviewer_role:$('#sExtractReviewer').value.trim(),
+      extract_review_enabled:$('#sExtractReviewEnabled').value
+    }};
   if($('#sMineruToken').value.trim())payload.mineru.token=$('#sMineruToken').value.trim();
   if($('#sLlmKey').value.trim())payload.llm.api_key=$('#sLlmKey').value.trim();
   const byRole={};
@@ -518,7 +649,7 @@ async function pollGlobal(){try{const r=await api('/api/jobs');
   if(!$('#tab-jobs').hidden)loadJobs();
 }catch(e){}}
 setInterval(pollGlobal,3000);pollGlobal();
-refreshPdfs();loadSchemas();
+loadCollections().then(()=>{refreshPdfs();loadParsed();loadSchemas();loadData(0)});
 </script>
 </body>
 </html>

@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from loguru import logger
 
-from settings import PARSED_DIR, EXTRACTED_DIR
+import settings
 from src.schema import SchemaDiscovery, SchemaStore
 from src.schema.sampling import list_parsed_papers, load_paper_text
 from src.extractors import ExtractionService
@@ -40,20 +40,22 @@ DEFAULT_DESC = (
 def cmd_design(args):
     domain = args.domain or DEFAULT_DOMAIN
     desc = args.desc or DEFAULT_DESC
-    papers = list_parsed_papers()
+    collection = args.collection or settings.DEFAULT_COLLECTION
+    papers = list_parsed_papers(collection=collection)
     if not papers:
-        print("❌ 没有已解析论文 (data/processed/parsed/*/full.md)")
+        print(f"❌ 没有已解析论文 ({settings.collection_parsed_dir(collection)}/*/full.md)")
         return 1
 
     disc = SchemaDiscovery(
         domain=domain, description=desc,
         sample_size=args.samples,
         target_min=args.min_fields, target_max=args.max_fields,
+        collection=collection,
     )
     print(f"🧠 设计 schema（多agent）：领域={domain}，样本≤{args.samples} 篇 ...")
     schema = disc.discover(papers)
 
-    store = SchemaStore()
+    store = SchemaStore(collection=collection)
     path = store.save(schema)
     print(f"\n✅ schema 已生成：{path}")
     print(f"   slug: {schema.slug}")
@@ -68,7 +70,8 @@ def cmd_design(args):
 
 
 def cmd_list(args):
-    store = SchemaStore()
+    collection = args.collection or settings.DEFAULT_COLLECTION
+    store = SchemaStore(collection=collection)
     schemas = store.list_schemas()
     if not schemas:
         print("（暂无生成的 schema，先运行 design）")
@@ -78,8 +81,8 @@ def cmd_list(args):
     return 0
 
 
-def _extract_one(service, paper_id, output_dir):
-    content = load_paper_text(paper_id)
+def _extract_one(service, paper_id, output_dir, collection):
+    content = load_paper_text(paper_id, collection=collection)
     if not content:
         print(f"  ❌ {paper_id}: 无 full.md")
         return False
@@ -98,7 +101,8 @@ def _extract_one(service, paper_id, output_dir):
 
 
 def cmd_extract(args):
-    store = SchemaStore()
+    collection = args.collection or settings.DEFAULT_COLLECTION
+    store = SchemaStore(collection=collection)
     try:
         schema = store.load(args.slug)
     except FileNotFoundError:
@@ -106,10 +110,10 @@ def cmd_extract(args):
         return 1
 
     service = ExtractionService(schema=schema, model=args.model)
-    output_dir = Path(args.out) if args.out else EXTRACTED_DIR
+    output_dir = Path(args.out) if args.out else settings.collection_extracted_dir(collection, args.slug)
 
     if args.all:
-        papers = list_parsed_papers()
+        papers = list_parsed_papers(collection=collection)
     elif args.paper:
         papers = [args.paper]
     else:
@@ -119,7 +123,7 @@ def cmd_extract(args):
     print(f"🚀 用 schema='{args.slug}' 提取 {len(papers)} 篇 ...")
     ok = 0
     for pid in papers:
-        if _extract_one(service, pid, output_dir):
+        if _extract_one(service, pid, output_dir, collection):
             ok += 1
     print(f"\n📊 完成：成功 {ok}/{len(papers)}，输出目录 {output_dir}")
     return 0 if ok == len(papers) else 1
@@ -136,8 +140,10 @@ def main():
     p_design.add_argument("--min-fields", type=int, default=18, dest="min_fields")
     p_design.add_argument("--max-fields", type=int, default=40, dest="max_fields")
     p_design.add_argument("--model", help="LLM模型")
+    p_design.add_argument("--collection", default=None, help="主题 collection")
 
-    sub.add_parser("list", help="列出已生成 schema")
+    p_list = sub.add_parser("list", help="列出已生成 schema")
+    p_list.add_argument("--collection", default=None, help="主题 collection")
 
     p_ext = sub.add_parser("extract", help="用 schema 提取")
     p_ext.add_argument("--slug", required=True, help="schema slug")
@@ -145,6 +151,7 @@ def main():
     p_ext.add_argument("--all", action="store_true", help="提取全部已解析论文")
     p_ext.add_argument("--out", help="输出目录")
     p_ext.add_argument("--model", help="LLM模型")
+    p_ext.add_argument("--collection", default=None, help="主题 collection")
 
     args = parser.parse_args()
     if args.command == "design":

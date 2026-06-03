@@ -7,8 +7,28 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 import json
 import time
+import threading
 from pathlib import Path
 from loguru import logger
+
+_SEM_LOCK = threading.Lock()
+_SEM_LIMIT = None
+_SEM = None
+
+
+def _llm_semaphore():
+    """Process-wide limiter for outbound LLM calls."""
+    global _SEM_LIMIT, _SEM
+    try:
+        import settings
+        limit = max(1, int(getattr(settings, "LLM_MAX_INFLIGHT", 8)))
+    except Exception:
+        limit = 8
+    with _SEM_LOCK:
+        if _SEM is None or _SEM_LIMIT != limit:
+            _SEM_LIMIT = limit
+            _SEM = threading.BoundedSemaphore(limit)
+        return _SEM
 
 
 @dataclass
@@ -151,7 +171,9 @@ class LLMClient(ABC):
                 call_kwargs["max_tokens"] = cur_max_tokens
 
                 start_time = time.time()
-                response = self._do_call(messages, **call_kwargs)
+                sem = _llm_semaphore()
+                with sem:
+                    response = self._do_call(messages, **call_kwargs)
                 response.latency_ms = int((time.time() - start_time) * 1000)
                 
                 if response.success:

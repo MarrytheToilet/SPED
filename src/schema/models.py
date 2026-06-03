@@ -89,11 +89,13 @@ class GeneratedSchema:
     description: str
     fields: List[SchemaField] = field(default_factory=list)
     record_definition: str = ""
+    extraction_format: str = ""
     slug: str = ""
     schema_version: str = "auto-1"
     model: str = ""
     source_papers: List[str] = field(default_factory=list)
     generated_at: str = ""
+    discovery_trace: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.slug:
@@ -109,11 +111,13 @@ class GeneratedSchema:
             "domain": self.domain,
             "description": self.description,
             "record_definition": self.record_definition,
+            "extraction_format": self.extraction_format,
             "model": self.model,
             "generated_at": self.generated_at,
             "source_papers": self.source_papers,
             "field_count": len(self.fields),
             "fields": [f.to_dict() for f in self.fields],
+            "discovery_trace": self.discovery_trace or {},
         }
 
     @classmethod
@@ -124,11 +128,13 @@ class GeneratedSchema:
             description=d.get("description", ""),
             fields=fields,
             record_definition=d.get("record_definition", ""),
+            extraction_format=d.get("extraction_format", ""),
             slug=d.get("slug", ""),
             schema_version=d.get("schema_version", "auto-1"),
             model=d.get("model", ""),
             source_papers=d.get("source_papers", []),
             generated_at=d.get("generated_at", ""),
+            discovery_trace=d.get("discovery_trace", {}) if isinstance(d.get("discovery_trace", {}), dict) else {},
         )
 
 
