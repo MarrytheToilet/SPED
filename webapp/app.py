@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import List, Optional
 import hashlib
 import json
+from urllib.parse import quote
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -249,15 +250,24 @@ def api_data(slug: Optional[str] = None, collection: Optional[str] = None, offse
 def api_data_export(slug: Optional[str] = None, collection: Optional[str] = None, fmt: str = "csv"):
     from fastapi.responses import Response
     tag = slug or "all"
+    ext = "json" if fmt == "json" else "csv"
+    safe_tag = "".join(
+        ch if ch.isascii() and (ch.isalnum() or ch in "-_.") else "_"
+        for ch in tag
+    ).strip("_") or "data"
+    disposition = (
+        f'attachment; filename="data_{safe_tag}.{ext}"; '
+        f"filename*=UTF-8''{quote(f'data_{tag}.{ext}')}"
+    )
     if fmt == "json":
         content = services.export_json(slug, collection)
         return Response(
             content, media_type="application/json; charset=utf-8",
-            headers={"Content-Disposition": f'attachment; filename="data_{tag}.json"'})
+            headers={"Content-Disposition": disposition})
     content = services.export_csv(slug, collection)
     return Response(
         content, media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="data_{tag}.csv"'})
+        headers={"Content-Disposition": disposition})
 
 
 # ---------------- 任务 ----------------

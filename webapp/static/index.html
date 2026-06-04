@@ -537,7 +537,7 @@ function renderPager(){const from=DATA.total?DATA.offset+1:0,to=Math.min(DATA.of
 function pageMove(dir){const next=DATA.offset+dir*DATA.limit;
   if(next<0||next>=DATA.total)return;loadData(next);}
 function exportData(fmt){const slug=$('#vSchema').value;
-  window.open('/api/data/export?'+new URLSearchParams({slug:slug||'',fmt:fmt}),'_blank');}
+  window.open('/api/data/export?'+new URLSearchParams({slug:slug||'',collection:currentCollection||'',fmt:fmt}),'_blank');}
 // 单个共享浮动提示框，避免给每个单元格都建 DOM（数千行时会极卡）
 (function(){const tip=document.createElement('div');tip.id='celltip';document.body.appendChild(tip);
   const tbl=$('#dataTable');if(!tbl)return;
