@@ -103,35 +103,6 @@ def test_repair_schema_dedup_enum_and_fill_candidates():
     assert any(f.name == "object_name" for f in repaired.fields)
 
 
-def test_discovery_coverage_and_consolidation():
-    cand = {"fields": [
-        {"name": "material", "type": "string", "description": "材料"},
-        {"name": "hardness", "type": "number", "unit": "HV", "description": "硬度"},
-    ]}
-    consolidated = {"record_definition": "一种材料一次实验",
-                    "fields": [
-                        {"name": "material", "type": "string", "importance": "core", "description": "材料"},
-                        {"name": "hardness", "type": "number", "unit": "HV", "importance": "common", "description": "硬度"},
-                        {"name": "wear_rate", "type": "number", "unit": "mm3/Nm", "importance": "common", "description": "磨损率"},
-                    ]}
-    fake = FakeLLM({"schema_candidate": cand, "schema_consolidate": consolidated})
-
-    disc = SchemaDiscovery(domain="人工关节", description="摩擦学", sample_size=3, target_min=1, target_max=10)
-    disc._clients["consolidator"] = fake  # 注入假整合client，绕过真实端点
-    # 直接喂候选，绕过文件读取
-    per_paper = [cand["fields"], cand["fields"]]
-    merged = disc._merge_candidates(per_paper)
-    cov = {m["name"]: m["coverage"] for m in merged}
-    assert cov["material"] == 2 and cov["hardness"] == 2
-
-    schema = disc._consolidate(merged)
-    assert len(schema.fields) == 3
-    assert schema.record_definition
-    # coverage 回填
-    mat = next(f for f in schema.fields if f.name == "material")
-    assert mat.coverage == 2
-
-
 def test_schema_discovery_full_schema_agents(monkeypatch, tmp_path):
     paper_dir = tmp_path / "p1"
     paper_dir.mkdir()
@@ -194,20 +165,6 @@ def test_schema_discovery_full_schema_agents(monkeypatch, tmp_path):
     assert schema.extraction_format
     assert schema.discovery_trace["pipeline"] == "schema_draft_merge_review"
     assert len(schema.discovery_trace["schema_drafts"]) == 3
-
-
-def test_merge_candidates_counts_coverage_by_paper_not_agent():
-    disc = SchemaDiscovery(domain="d", description="x", sample_size=1, target_min=1, target_max=10)
-    # Same paper, two proposers both suggest material; coverage should count this paper once.
-    same_paper_fields = [
-        {"name": "material", "type": "string", "description": "A"},
-        {"name": "material", "type": "string", "description": "B"},
-        {"name": "wear_rate", "type": "number", "unit": "mm3/Nm"},
-    ]
-    merged = disc._merge_candidates([same_paper_fields])
-    cov = {m["name"]: m["coverage"] for m in merged}
-    assert cov["material"] == 1
-    assert cov["wear_rate"] == 1
 
 
 def test_flat_extract_evidence_rules():

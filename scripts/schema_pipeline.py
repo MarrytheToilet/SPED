@@ -22,8 +22,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from loguru import logger
-
 import settings
 from src.schema import SchemaDiscovery, SchemaStore
 from src.schema.sampling import list_parsed_papers, load_paper_text

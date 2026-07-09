@@ -1,7 +1,7 @@
 """
 提取服务 - 高层API。基于「生成schema」的扁平提取（每字段内联 value+evidence）。
 """
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from dataclasses import dataclass
 from loguru import logger
 

@@ -138,43 +138,6 @@ class JobManager:
         t.start()
         return job
 
-    def submit_unchecked(self, job_type: str, title: str,
-               fn: Callable[[JobHandle], Any]) -> Job:
-        """Backward-compatible submit without fingerprint dedupe."""
-        job = Job(job_type, title)
-        with self._lock:
-            self._jobs[job.id] = job
-        handle = JobHandle(job)
-
-        def runner():
-            with job._lock:
-                job.status = "running"
-                job.updated_at = datetime.now().isoformat(timespec="seconds")
-            handle.log(f"任务开始: {title}")
-            try:
-                result = fn(handle)
-                with job._lock:
-                    if job.cancel_requested:
-                        job.status = "cancelled"
-                    else:
-                        job.status = "success"
-                        if isinstance(result, dict):
-                            job.result = result
-                    job.updated_at = datetime.now().isoformat(timespec="seconds")
-                handle.log(f"任务结束: {job.status}")
-            except Exception as e:  # noqa: BLE001
-                with job._lock:
-                    job.status = "failed"
-                    job.error = str(e)
-                    job.updated_at = datetime.now().isoformat(timespec="seconds")
-                handle.log(f"任务异常: {e}")
-                handle.log(traceback.format_exc().splitlines()[-1])
-
-        t = threading.Thread(target=runner, daemon=True)
-        job._thread = t
-        t.start()
-        return job
-
     def get(self, job_id: str) -> Optional[Job]:
         return self._jobs.get(job_id)
 

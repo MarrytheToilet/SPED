@@ -23,7 +23,7 @@ from ..llm.base import LLMClient, LLMMessage
 from ..llm.factory import create_llm_client_for_agent
 from ._json import parse_json_loose
 from .models import GeneratedSchema, SchemaField, normalize_field_name, validate_schema
-from .sampling import build_excerpt, build_schema_context_for_papers, collect_figures, load_paper_text, select_sample
+from .sampling import build_schema_context_for_papers, load_paper_text, select_sample
 from . import prompts as P
 
 
@@ -38,9 +38,6 @@ class SchemaDiscovery:
         excerpt_budget: int = None,
         target_min: int = None,
         target_max: int = None,
-        proposer_roles: List[str] = None,
-        consolidator_role: str = "consolidator",
-        critic_role: str = "critic",
         schema_agent_roles: List[str] = None,
         schema_merger_role: str = None,
         schema_reviewer_role: str = None,
@@ -59,14 +56,6 @@ class SchemaDiscovery:
         )
         self.schema_merger_role = schema_merger_role or getattr(settings, "SCHEMA_MERGER_ROLE", "schema_merger")
         self.schema_reviewer_role = schema_reviewer_role or getattr(settings, "SCHEMA_REVIEWER_ROLE", "schema_reviewer")
-        self.proposer_roles = proposer_roles or getattr(
-            settings, "SCHEMA_PROPOSER_ROLES", ["proposer_a", "proposer_b", "proposer_c"]
-        )
-        self.proposer_strategy = getattr(settings, "SCHEMA_PROPOSER_STRATEGY", "all")
-        if self.proposer_strategy not in {"all", "rotate"}:
-            self.proposer_strategy = "all"
-        self.consolidator_role = consolidator_role
-        self.critic_role = critic_role
         self.logger = logger.bind(module="SchemaDiscovery")
         self._clients: Dict[str, LLMClient] = {}
 
@@ -167,61 +156,7 @@ class SchemaDiscovery:
             return draft
         return reviewed
 
-    # ---- 提议 ----
-    def _propose_for_paper(self, paper_id: str, text: str, role: str) -> List[Dict]:
-        excerpt = build_excerpt(text, self.excerpt_budget)
-        figures = collect_figures(text) or "（未识别到图/表标题）"
-        user = P.PROPOSER_USER.format(
-            description=self.description, paper_id=paper_id, excerpt=excerpt, figures=figures
-        )
-        messages = [
-            LLMMessage(role="system", content=P.PROPOSER_SYSTEM),
-            LLMMessage(role="user", content=user),
-        ]
-        resp = self._client(role).call(messages, call_id=f"propose_{role}_{paper_id}")
-        if not resp.success:
-            self.logger.warning(f"[{role}] 候选字段失败 {paper_id}: {resp.error}")
-            return []
-        try:
-            data = parse_json_loose(resp.content)
-        except ValueError as e:
-            self.logger.warning(f"[{role}] 候选解析失败 {paper_id}: {e}")
-            return []
-        fields = data.get("fields") if isinstance(data, dict) else data
-        return fields if isinstance(fields, list) else []
-
-    def _merge_candidates(self, per_paper: List[List[Dict]]) -> List[Dict]:
-        merged: Dict[str, Dict] = {}
-        for fields in per_paper:
-            seen = set()
-            for f in fields:
-                if not isinstance(f, dict):
-                    continue
-                name = str(f.get("name", "")).strip()
-                key = normalize_field_name(name)
-                if not name or not key:
-                    continue
-                if key not in merged:
-                    merged[key] = {
-                        "name": name,
-                        "type": f.get("type", "string"),
-                        "unit": f.get("unit"),
-                        "enum_values": f.get("enum_values"),
-                        "description": f.get("description", ""),
-                        "extraction_hint": f.get("extraction_hint", ""),
-                        "from_figure": bool(f.get("from_figure", False)),
-                        "coverage": 0,
-                    }
-                if key not in seen:
-                    merged[key]["coverage"] += 1
-                    seen.add(key)
-                if not merged[key].get("description") and f.get("description"):
-                    merged[key]["description"] = f.get("description")
-                if f.get("from_figure"):
-                    merged[key]["from_figure"] = True
-        return sorted(merged.values(), key=lambda x: x["coverage"], reverse=True)
-
-    # ---- 整合 + 评审 ----
+    # ---- schema 组装 + 修复 ----
     def _schema_from_json(self, data: Dict, candidates: List[Dict]) -> GeneratedSchema:
         cov_map = {normalize_field_name(c["name"]): c.get("coverage", 0) for c in candidates}
         fig_map = {normalize_field_name(c["name"]): bool(c.get("from_figure")) for c in candidates}
@@ -358,55 +293,6 @@ class SchemaDiscovery:
 
         schema.fields = fields
         return schema, notes
-
-    def _consolidate(self, candidates: List[Dict]) -> GeneratedSchema:
-        system = P.CONSOLIDATOR_SYSTEM.format(min=self.target_min, max=self.target_max)
-        user = P.CONSOLIDATOR_USER.format(
-            description=self.description,
-            candidates=_json.dumps(candidates, ensure_ascii=False),
-            min=self.target_min, max=self.target_max,
-        )
-        messages = [LLMMessage(role="system", content=system),
-                    LLMMessage(role="user", content=user)]
-        resp = self._client(self.consolidator_role).call(messages, call_id="schema_consolidate")
-        if not resp.success:
-            raise RuntimeError(f"整合 schema 失败: {resp.error}")
-        data = parse_json_loose(resp.content)
-        if not isinstance(data, dict):
-            raise RuntimeError("整合返回非对象")
-        return self._schema_from_json(data, candidates)
-
-    def _critique(self, draft: GeneratedSchema, candidates: List[Dict]) -> GeneratedSchema:
-        system = P.CRITIC_SYSTEM.format(min=self.target_min, max=self.target_max)
-        draft_json = _json.dumps(
-            {"record_definition": draft.record_definition,
-             "fields": [f.to_dict() for f in draft.fields]},
-            ensure_ascii=False,
-        )
-        user = P.CRITIC_USER.format(
-            description=self.description, draft=draft_json,
-            candidates=_json.dumps(candidates, ensure_ascii=False),
-            min=self.target_min, max=self.target_max,
-        )
-        messages = [LLMMessage(role="system", content=system),
-                    LLMMessage(role="user", content=user)]
-        resp = self._client(self.critic_role).call(messages, call_id="schema_critique")
-        if not resp.success:
-            self.logger.warning(f"评审失败，沿用草稿: {resp.error}")
-            return draft
-        try:
-            data = parse_json_loose(resp.content)
-        except ValueError as e:
-            self.logger.warning(f"评审解析失败，沿用草稿: {e}")
-            return draft
-        if not isinstance(data, dict) or not data.get("fields"):
-            return draft
-        final = self._schema_from_json(data, candidates)
-        # 评审若把字段删空/过少，回退草稿
-        if len(final.fields) < max(self.target_min // 2, 5):
-            self.logger.warning("评审结果字段过少，沿用草稿")
-            return draft
-        return final
 
     # ---- 入口 ----
     def discover(self, paper_ids: List[str]) -> GeneratedSchema:

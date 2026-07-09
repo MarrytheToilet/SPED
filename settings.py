@@ -13,7 +13,6 @@ load_dotenv()
 # ==========================
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
-SRC_DIR = BASE_DIR / "src"
 
 DEFAULT_COLLECTION = os.getenv("DEFAULT_COLLECTION", "人工关节材料摩擦学")
 
@@ -80,16 +79,8 @@ def pdf_path_from_logical(name: str) -> Path:
     return collection_pdf_dir(coll) / tail
 
 
-# Backward-compatible constants. New code should use collection_* helpers.
-RAW_DATA_DIR = DATA_DIR / "raw"
-PDF_DIR = COLLECTIONS_DIR
-PROCESSED_DIR = DATA_DIR / "processed"
-PARSED_DIR = COLLECTIONS_DIR
-EXTRACTED_DIR = COLLECTIONS_DIR
+# 状态库（pdf_state.db）与长任务 lock 所在目录。
 UPLOADS_DIR = STATE_DIR
-SCHEMA_DIR = COLLECTIONS_DIR
-GENERATED_SCHEMA_DIR = collection_schema_dir(DEFAULT_COLLECTION)
-BATCH_CSV = UPLOADS_DIR / "upload_batches.csv"
 
 # 确保目录存在
 for dir_path in [
@@ -152,9 +143,6 @@ LLM_API_BASE = os.getenv("LLM_API_BASE", os.getenv("OPENAI_API_BASE", "https://a
 LLM_API_KEY = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", ""))
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # 统一走 OpenAI 兼容客户端
 
-# ---- 向后兼容别名 ----
-DEFAULT_MODEL = LLM_MODEL
-
 # ==========================
 # 多agent分角色配置
 # ==========================
@@ -166,13 +154,11 @@ DEFAULT_MODEL = LLM_MODEL
 #   schema_agent_a/b/c —— schema 自动发现：每个 agent 独立阅读同一批样本并产出完整 schema
 #   schema_merger       —— 合并多份 schema 草案
 #   schema_reviewer     —— 审阅合并后的 schema
-#   proposer_a/b/c / consolidator / critic —— 旧字段候选式 schema 流程角色（兼容保留）
 #   extractor_a/b/c     —— 多路提取角色
 #   extract_merger      —— 多路提取结果合并角色
 #   extract_reviewer    —— 提取结果与 evidence 审阅角色
 AGENT_ROLE_NAMES = [
     "schema_agent_a", "schema_agent_b", "schema_agent_c", "schema_merger", "schema_reviewer",
-    "proposer_a", "proposer_b", "proposer_c", "consolidator", "critic",
     "extractor", "extractor_a", "extractor_b", "extractor_c", "extract_merger", "extract_reviewer",
 ]
 
@@ -182,12 +168,6 @@ SCHEMA_AGENT_ROLES = [
 ]
 SCHEMA_MERGER_ROLE = os.getenv("SCHEMA_MERGER_ROLE", "schema_merger").strip() or "schema_merger"
 SCHEMA_REVIEWER_ROLE = os.getenv("SCHEMA_REVIEWER_ROLE", "schema_reviewer").strip() or "schema_reviewer"
-
-# 旧候选式流程兼容项（默认不作为主流程使用）
-SCHEMA_PROPOSER_ROLES = [
-    r.strip() for r in os.getenv("SCHEMA_PROPOSER_ROLES", "proposer_a,proposer_b,proposer_c").split(",") if r.strip()
-]
-SCHEMA_PROPOSER_STRATEGY = os.getenv("SCHEMA_PROPOSER_STRATEGY", "all").strip().lower() or "all"
 
 # 提取阶段默认 2 个 extractor + merger + reviewer。
 EXTRACTOR_ROLES = [
@@ -259,7 +239,6 @@ LLM_MAX_INFLIGHT = int(os.getenv("LLM_MAX_INFLIGHT", "8"))
 # 模型最大输出 token 数。reasoning 模型(思考+正文)需要很大额度，默认拉满到 65536，
 # 避免因 max_tokens 不足导致正文为空/被截断。base.call() 仍会在截断时自动加倍重试。
 LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "65536"))
-MODEL_MAX_TOKENS = {LLM_MODEL: LLM_MAX_OUTPUT_TOKENS}
 
 # ==========================
 # Schema 自动设计配置

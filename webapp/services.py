@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 import settings
 from src.database.catalog import (
-    PaperCatalog, PARSE_PARSED, PARSE_FAILED, PARSE_UPLOADED, EXTRACT_DONE,
+    PaperCatalog, PARSE_PARSED, PARSE_FAILED,
     configure_connection,
 )
 from src.pdfs.pdf_processor import PDFProcessor
