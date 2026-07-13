@@ -1,341 +1,361 @@
-# SPED - 科研论文结构化数据提取系统
+# SPED · 科研论文结构化数据提取系统
 
-SPED 用来把一批领域 PDF 论文转换成可导出的结构化数据。核心流程是：
+SPED 把一批领域 PDF 论文转换成可导出的结构化数据表。核心流程：
 
-1. PDF 通过 MinerU 解析成 Markdown。
-2. 多个 schema agent 阅读样本论文，各自提出 schema。
-3. merger/reviewer 合并并审阅 schema。
-4. 多个 extractor 按 schema 提取全文数据。
-5. merger/reviewer 合并和审阅提取结果。
-6. 在网页中查看 evidence，或导出 CSV/JSON。
+```
+PDF ──MinerU──▶ Markdown ──多agent设计──▶ schema ──多agent提取──▶ 带原文证据的记录 ──▶ CSV / JSON
+      解析              (schema_a/b/c→合并→审阅)     (extractor_a/b→合并→审阅)          导出
+```
 
-当前默认主题 collection 是 `人工关节材料摩擦学`，但目录结构和 schema 逻辑支持按主题扩展。
+每个提取值都附带一段**原文证据引文**并自动核验，可在网页里悬浮查看来源，或导出为 CSV/JSON。
+数据按「主题 collection」组织，默认主题是 `人工关节材料摩擦学`，可扩展到任意领域。
 
 ---
 
-## 1. 环境准备
+## 目录
 
-建议使用已有 conda 环境或 Python 3.10+ 环境：
+- [1. 环境与安装](#1-环境与安装)
+- [2. 配置 .env](#2-配置-env)
+- [3. 三种使用方式](#3-三种使用方式)
+  - [A. 交互菜单 `menu.py`（推荐入门）](#a-交互菜单-menupy推荐入门)
+  - [B. Web 界面（推荐日常）](#b-web-界面推荐日常)
+  - [C. 命令行脚本（自动化 / 批处理）](#c-命令行脚本自动化--批处理)
+- [4. 完整工作流](#4-完整工作流)
+- [5. 部署](#5-部署)
+- [6. 数据目录](#6-数据目录)
+- [7. 多 agent 与模型配置](#7-多-agent-与模型配置)
+- [8. Web API 一览](#8-web-api-一览)
+- [9. 测试](#9-测试)
+- [10. 常见问题](#10-常见问题)
+
+---
+
+## 1. 环境与安装
+
+要求 **Python 3.10+**（推荐用现成的 conda 环境）。
 
 ```bash
+git clone https://github.com/MarrytheToilet/SPED.git
+cd SPED
 pip install -r requirements.txt
 ```
 
-复制并填写本地配置：
+外部依赖：
+- **MinerU**：把 PDF 解析成 Markdown，需要 API token（https://mineru.net）。
+- **一个 OpenAI 兼容的 LLM 端点**：DeepSeek / Qwen / GLM / Kimi / OpenAI / SiliconFlow 等均可。
+
+---
+
+## 2. 配置 .env
+
+复制模板并填写：
 
 ```bash
 cp .env.example .env
 ```
 
-最少需要配置：
+最少需要这几项就能跑通：
 
 ```ini
+# LLM（OpenAI 兼容端点）
 LLM_MODEL=deepseek-v4-flash
 LLM_API_BASE=https://api.deepseek.com/v1
 LLM_API_KEY=sk-...
 
+# PDF 解析
 MINERU_TOKEN=...
+
+# 默认主题与网页端口
 DEFAULT_COLLECTION=人工关节材料摩擦学
 WEB_PORT=8000
 ```
 
-不要提交 `.env`。仓库已经通过 `.gitignore` 忽略本地密钥、PDF、解析结果、提取结果、SQLite 状态库和日志。
+常用可选项（都有默认值，详见 `.env.example`）：
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `EXTRACT_CONCURRENCY` | 8 | 提取阶段同时处理多少篇论文（1–32） |
+| `LLM_MAX_INFLIGHT` | 8 | 进程内 LLM 并发上限，务必 ≤ 供应商限额 |
+| `MAX_PDF_SIZE_MB` | 20 | 超过体积的 PDF 拒绝上传（MinerU 大文件易超时） |
+| `MINERU_UPLOAD_RATE_PER_MIN` | 50 | MinerU 上传限速（文件/分钟） |
+| `SCHEMA_AGENT_ROLES` | schema_agent_a,b,c | 设计 schema 的多个 agent 角色 |
+| `EXTRACTOR_ROLES` | extractor_a,b | 提取的多个 extractor 角色 |
+
+> `.env` 已被 `.gitignore` 忽略，不要提交密钥。
 
 ---
 
-## 2. 推荐入口：`menu.py`
+## 3. 三种使用方式
 
-启动交互式菜单：
+三种方式操作的是**同一份数据**（`data/` 下），可以混用：例如命令行批量提取、网页里查看证据。
+
+### A. 交互菜单 `menu.py`（推荐入门）
 
 ```bash
 python menu.py
 ```
 
-菜单是日常使用的主入口，包含：
+菜单把常用操作串成编号选项，底层调用的就是下面的脚本 / Web：
 
-- 上传 PDF 到 MinerU
-- 查询批次状态
-- 下载解析结果
-- 查看 agent 端点和运行配置
-- 自动设计 schema
-- 查看已有 schema
-- 单篇或批量提取
-- 导出提取数据
-- 启动 Web 界面
-- 查看数据目录概览
-
-推荐运行顺序：
-
-1. 把 PDF 放入：
-   ```text
-   data/collections/<collection>/pdfs/
-   ```
-2. 在菜单中选择 `1. 上传PDF到MinerU`。
-3. 上传后选择 `2. 查询批次状态`。
-4. 解析完成后选择 `3. 下载解析结果`。
-5. 选择 `6. 自动设计schema（多agent）`，生成 schema。
-6. 选择 `9. 用schema批量提取全部`。
-7. 选择 `10. 导出提取数据`，导出 CSV 或 JSON。
-8. 需要人工查看 evidence 时，选择 `12. 启动网页`。
-
-### WSL 下访问网页
-
-如果在 WSL 里运行，`menu.py` 会默认监听 `0.0.0.0`，并优先提示 WSL IP，例如：
-
-```text
-http://172.x.x.x:8000
+```
+【PDF 处理】
+  1. 上传 PDF 到 MinerU     2. 查询批次状态
+  3. 下载解析结果           4. PDF 处理统计
+【Schema 设计 + 数据提取】
+  5. 查看各 agent 端点/配置  6. 自动设计 schema（多agent）
+  7. 查看已生成 schema       8. 用 schema 提取单篇
+  9. 用 schema 批量提取全部  10. 导出提取数据
+  11. 列出已解析论文
+【Web】
+  12. 启动网页（解析/设计/提取/数据/设置一站式）
+【数据 / 配置】
+  13. 数据目录概览           14. 运行配置摘要
 ```
 
-在 Windows 浏览器中优先打开菜单提示的 WSL IP 地址。某些 WSL 环境下 `http://localhost:8000` 会被 Windows 重置连接，不一定可用。
+### B. Web 界面（推荐日常）
+
+从菜单选 `12`，或直接启动：
+
+```bash
+# 仅本机访问
+python -m uvicorn webapp.app:app --host 127.0.0.1 --port 8000
+# 局域网 / 远程访问（配合防火墙）
+python -m uvicorn webapp.app:app --host 0.0.0.0 --port 8000
+```
+
+浏览器打开 `http://<host>:8000`。页面板块：
+
+- **解析 PDF**：选文件、提交 MinerU 解析、看进度
+- **Schema**：自动设计，或上传 / 修改 / 克隆 / 删除 schema
+- **提取数据**：选 schema 和论文，启动批量提取任务
+- **数据表**：查看结果，悬浮单元格看原文证据
+- **设置**：在线改 collection、并发数、LLM/MinerU 端点和 agent 角色（写回 `.env` 并热重载）
+- **任务**：后台任务的进度、日志、取消
+
+> ⚠️ 网页用**进程内**的任务管理器和 SQLite 状态库，因此必须**单 worker**运行（不要加 `--workers >1`，否则任务状态和进度不共享）。见[部署](#5-部署)。
+
+### C. 命令行脚本（自动化 / 批处理）
+
+**PDF 处理** `scripts/pdf.py`：
+
+```bash
+python scripts/pdf.py upload --collection 人工关节材料摩擦学 [--dir <PDF目录>]
+python scripts/pdf.py status [<batch_id>]          # 不带 id 查全部批次
+python scripts/pdf.py download <batch_id> --collection 人工关节材料摩擦学
+python scripts/pdf.py stats
+```
+
+**Schema 设计 / 列出 / 提取** `scripts/schema_pipeline.py`：
+
+```bash
+# 设计 schema（读若干已解析论文，自动产出单表字段）
+python scripts/schema_pipeline.py design \
+  --collection 人工关节材料摩擦学 \
+  --domain 人工关节材料摩擦学 \
+  --desc "材料成分/几何/性能/摩擦磨损参数与结果/计算模拟" \
+  --samples 16 --min-fields 25 --max-fields 70
+
+# 列出已生成 schema
+python scripts/schema_pipeline.py list --collection 人工关节材料摩擦学
+
+# 提取：单篇
+python scripts/schema_pipeline.py extract --collection 人工关节材料摩擦学 \
+  --slug <schema_slug> --paper <paper_id>
+# 提取：全部已解析论文
+python scripts/schema_pipeline.py extract --collection 人工关节材料摩擦学 \
+  --slug <schema_slug> --all
+```
+
+**带文件锁的全量提取** `scripts/run_full_extract.py`（长任务推荐，避免同一 schema 被重复启动）：
+
+```bash
+EXTRACT_CONCURRENCY=4 python scripts/run_full_extract.py \
+  --collection 人工关节材料摩擦学 --slug <schema_slug>
+```
+
+**导出**（命令行没有单独的导出脚本，走 Web API 或菜单第 10 项）：
+
+```bash
+curl "http://127.0.0.1:8000/api/data/export?slug=<schema_slug>&collection=<collection>&fmt=csv" -o data.csv
+curl "http://127.0.0.1:8000/api/data/export?slug=<schema_slug>&collection=<collection>&fmt=json" -o data.json
+```
+
+CSV 只导字段值（Excel 友好，带 UTF-8 BOM）；JSON 保留完整 `{value, evidence, evidence_verified}`。
 
 ---
 
-## 3. Web 界面
+## 4. 完整工作流
 
-也可以直接启动 Web：
+```
+1) 把 PDF 放进 data/collections/<collection>/pdfs/
+2) 上传解析     menu 1  |  scripts/pdf.py upload      |  Web「解析 PDF」
+3) 查询/下载    menu 2,3|  scripts/pdf.py status/download
+4) 设计 schema  menu 6  |  schema_pipeline.py design  |  Web「Schema」
+5) 批量提取     menu 9  |  schema_pipeline.py extract --all  |  Web「提取数据」
+6) 查看证据                                              Web「数据表」（悬浮看来源）
+7) 导出         menu 10 |  /api/data/export           |  Web 导出按钮
+```
+
+三段产物（parsed / schemas / extracted）都落盘、彼此解耦，任一段可单独重跑，不影响其它段。
+
+---
+
+## 5. 部署
+
+### 本机 / WSL
+
+WSL 里推荐监听 `0.0.0.0`，然后在 Windows 浏览器用 WSL 的 IP 访问（`localhost` 转发有时会被重置）：
+
+```bash
+hostname -I                       # 取 WSL IP，例如 172.x.x.x
+python -m uvicorn webapp.app:app --host 0.0.0.0 --port 8000
+# Windows 浏览器打开 http://172.x.x.x:8000
+```
+
+`menu.py` 的选项 12 会自动检测 WSL 并提示可用地址与可用端口。
+
+### 远程服务器
+
+方式一，SSH 端口转发（最省心，不暴露端口）：
+
+```bash
+# 服务器上（仅监听本机）
+python -m uvicorn webapp.app:app --host 127.0.0.1 --port 8000
+# 自己电脑上
+ssh -L 8000:127.0.0.1:8000 <user>@<server>
+# 然后本机浏览器打开 http://127.0.0.1:8000
+```
+
+方式二，直接对外（注意防火墙 / 安全组放行端口）：
 
 ```bash
 python -m uvicorn webapp.app:app --host 0.0.0.0 --port 8000
 ```
 
-如果只想在 Linux/WSL 内部访问，也可以绑定本机：
+### 后台常驻
 
 ```bash
-python -m uvicorn webapp.app:app --host 127.0.0.1 --port 8000
+# 简单方式
+nohup python -m uvicorn webapp.app:app --host 0.0.0.0 --port 8000 > logs/web.log 2>&1 &
+# 或用 tmux / screen 保活
 ```
 
-Web 页面包含以下板块：
+systemd 服务示例（`/etc/systemd/system/sped.service`）：
 
-- `解析 PDF`：选择 PDF，提交 MinerU 解析任务，查看处理状态。
-- `Schema`：自动设计 schema，也可以上传、修改、克隆或删除 schema。
-- `提取数据`：选择 schema 和论文，启动批量提取任务。
-- `数据表`：查看提取结果，悬浮单元格查看 evidence。
-- `设置`：修改 collection、并发数、LLM/MinerU 端点和 agent 角色。
-- `任务`：查看后台任务进度、日志和状态。
+```ini
+[Unit]
+Description=SPED web
+After=network.target
 
-导出接口：
+[Service]
+WorkingDirectory=/path/to/SPED
+ExecStart=/path/to/python -m uvicorn webapp.app:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+User=youruser
 
-```text
-/api/data/export?slug=<schema_slug>&collection=<collection>&fmt=csv
-/api/data/export?slug=<schema_slug>&collection=<collection>&fmt=json
+[Install]
+WantedBy=multi-user.target
 ```
 
-CSV 只导出字段值，适合 Excel/表格分析。JSON 保留完整 `{value, evidence, verified}`。
+```bash
+sudo systemctl enable --now sped
+```
+
+### 部署注意事项
+
+- **必须单进程（单 worker）**：任务管理器（`webapp/jobs.py::JOBS`）是进程内单例，状态存在内存；SQLite 状态库也不适合多进程写。**不要**用 `--workers >1` 或 gunicorn 多 worker，否则进度/任务会错乱。要扩并发请调 `EXTRACT_CONCURRENCY` 和 `LLM_MAX_INFLIGHT`，而不是加 worker。
+- **并发匹配 API 限额**：`LLM_MAX_INFLIGHT` 要 ≤ LLM 供应商的并发上限，`MINERU_UPLOAD_RATE_PER_MIN` 要 ≤ MinerU 限速，否则会 429。
+- **长任务**：整库提取用 `scripts/run_full_extract.py`（带文件锁），或网页任务页；中断后重跑会跳过已成功的论文。
+- **反向代理**：如需 Nginx，转发到 `127.0.0.1:8000` 即可，注意放开较长的读超时（提取任务耗时）。
 
 ---
 
-## 4. 命令行脚本
+## 6. 数据目录
 
-不使用菜单时，也可以直接调用脚本。
-
-### PDF 处理
-
-```bash
-python scripts/pdf.py upload --collection 人工关节材料摩擦学
-python scripts/pdf.py status
-python scripts/pdf.py download <batch_id> --collection 人工关节材料摩擦学
-python scripts/pdf.py stats
 ```
-
-### Schema 自动发现
-
-```bash
-python scripts/schema_pipeline.py design \
-  --collection 人工关节材料摩擦学 \
-  --domain 人工关节材料摩擦学 \
-  --samples 16 \
-  --min-fields 25 \
-  --max-fields 70
-```
-
-查看 schema：
-
-```bash
-python scripts/schema_pipeline.py list --collection 人工关节材料摩擦学
-```
-
-### 数据提取
-
-单篇：
-
-```bash
-python scripts/schema_pipeline.py extract \
-  --collection 人工关节材料摩擦学 \
-  --slug 人工关节摩擦磨损_clean_v1 \
-  --paper <paper_id>
-```
-
-全部：
-
-```bash
-python scripts/schema_pipeline.py extract \
-  --collection 人工关节材料摩擦学 \
-  --slug 人工关节摩擦磨损_clean_v1 \
-  --all
-```
-
-长时间全量提取推荐用带锁的脚本，避免重复启动同一 schema：
-
-```bash
-EXTRACT_CONCURRENCY=4 python scripts/run_full_extract.py \
-  --collection 人工关节材料摩擦学 \
-  --slug 人工关节摩擦磨损_clean_v1
-```
-
----
-
-## 5. 数据目录
-
-当前数据按 collection 组织：
-
-```text
 data/
 ├── collections/
 │   └── <collection>/
-│       ├── pdfs/                 # 原始 PDF
-│       ├── parsed/               # MinerU 解析结果，包含 full.md
-│       ├── schemas/              # schema JSON
-│       ├── extracted/            # 按 schema_slug 存放提取结果
-│       └── exports/              # 菜单导出的 CSV/JSON
+│       ├── pdfs/                # 原始 PDF
+│       ├── parsed/<paper_id>/   # MinerU 解析结果，含 full.md 与 images/
+│       ├── schemas/             # schema JSON（+ archive/ 存归档）
+│       ├── extracted/<slug>/    # 按 schema_slug 存的提取结果 JSON
+│       └── exports/             # 菜单导出的 CSV/JSON
 └── state/
-    ├── pdf_state.db              # PDF/解析/提取状态库
-    ├── backups/                  # 状态库迁移备份
-    └── jobs/                     # 长任务 lock 文件
+    ├── pdf_state.db             # PDF / 解析 / 提取状态库（SQLite）
+    ├── backups/                 # 状态库迁移备份
+    └── jobs/                    # 长任务 lock 文件
 ```
 
-这些数据默认不提交到 Git。代码、配置样例、文档和测试才应该进入仓库。
+`data/**`、`logs/**`、`.env`、SQLite、缓存都在 `.gitignore` 里，不进仓库。
 
 ---
 
-## 6. 多 agent 逻辑
+## 7. 多 agent 与模型配置
 
-### Schema 自动发现
-
-默认：
+所有角色都走 OpenAI 兼容协议，默认全部回退到基础 `LLM_*` 端点；可用
+`AGENT_<ROLE>_MODEL / _API_BASE / _API_KEY` 单独覆盖某个角色，实现「不同模型家族分工协作」。
 
 ```ini
+# 设计 schema：多个 agent 各自读同一批样本 → 合并 → 审阅
 SCHEMA_AGENT_ROLES=schema_agent_a,schema_agent_b,schema_agent_c
 SCHEMA_MERGER_ROLE=schema_merger
 SCHEMA_REVIEWER_ROLE=schema_reviewer
-```
 
-流程：
-
-1. 多个 schema agent 阅读同一批样本论文。
-2. 每个 agent 独立提出完整 schema。
-3. `schema_merger` 合并同义字段、单位、枚举和描述。
-4. `schema_reviewer` 检查字段是否可抽取、是否过细/过粗、输出格式是否明确。
-
-### 提取阶段
-
-默认：
-
-```ini
+# 提取：多个 extractor 独立抽取 → 合并 → 审阅
 EXTRACTOR_ROLES=extractor_a,extractor_b
 EXTRACT_MERGER_ROLE=extract_merger
 EXTRACT_REVIEWER_ROLE=extract_reviewer
 EXTRACT_REVIEW_ENABLED=true
+
+# 例：给某个 schema agent 换成 Qwen
+# AGENT_SCHEMA_AGENT_B_MODEL=qwen-max
+# AGENT_SCHEMA_AGENT_B_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+# AGENT_SCHEMA_AGENT_B_API_KEY=sk-...
 ```
 
-流程：
-
-1. 多个 extractor 独立按同一个 schema 抽取同一篇论文。
-2. `extract_merger` 合并候选记录，处理冲突。
-3. `extract_reviewer` 对 value/evidence 做审阅，不支持的值会置空或删除。
-4. 输出 JSON 保存到：
-   ```text
-   data/collections/<collection>/extracted/<schema_slug>/<paper_id>.json
-   ```
-
-每个字段格式为：
-
-```json
-{
-  "field_name": {
-    "value": "...",
-    "evidence": "论文中的短证据",
-    "evidence_verified": true
-  }
-}
-```
+菜单第 5 项、网页「设置」页可查看每个角色实际生效的端点。架构细节见 `docs/ARCHITECTURE.md`。
 
 ---
 
-## 7. 常见问题
+## 8. Web API 一览
 
-### Windows 浏览器打不开 WSL 里的 `localhost:8000`
-
-这通常是 WSL localhost 自动转发异常。解决方式：
-
-1. Web 监听 `0.0.0.0`。
-2. 在 WSL 中查看 IP：
-   ```bash
-   hostname -I
-   ```
-3. 在 Windows 浏览器打开：
-   ```text
-   http://<WSL_IP>:8000
-   ```
-
-本项目的 `menu.py` 会自动检测 WSL，并优先提示这个地址。
-
-### 导出 CSV 出现 Internal Server Error
-
-旧版本曾因中文 schema slug 写入 `Content-Disposition` header 触发编码错误。现在已使用 `filename*=` UTF-8 编码，中文文件名可以正常下载。
-
-### 端口被占用
-
-`menu.py` 会从 `WEB_PORT` 开始查找可用端口，并提示建议端口。也可以手动输入端口。
-
-### 数据很多，是否需要提交到 Git
-
-不需要。`data/**`、`logs/**`、`.env`、SQLite 数据库和缓存都已忽略。只提交代码、文档、测试和 `.env.example`。
+| 方法 | 路径 | 作用 |
+|---|---|---|
+| GET | `/api/collections` | 列出主题及 PDF 数 |
+| GET/POST | `/api/pdfs` · `/api/pdfs/delete` | PDF 总览 / 清理 |
+| POST | `/api/parse` | 提交解析任务 |
+| GET | `/api/parsed` | 已解析论文 |
+| POST | `/api/schema/design` | 多agent 设计 schema |
+| GET/PUT/DELETE | `/api/schemas` · `/api/schemas/{slug}` | 列出 / 改 / 删 schema |
+| POST | `/api/schemas/{slug}/clone` · `/api/schema/upload` | 克隆 / 上传 schema |
+| POST | `/api/extract` | 提交提取任务 |
+| GET | `/api/data` · `/api/data/export` | 查看数据 / 导出 CSV·JSON |
+| GET/POST | `/api/jobs` · `/api/jobs/{id}` · `/api/jobs/{id}/cancel` | 任务进度 / 取消 |
+| GET/POST | `/api/settings` | 读取 / 更新运行配置 |
 
 ---
 
-## 8. 测试
-
-运行测试：
+## 9. 测试
 
 ```bash
 python -m pytest tests -q
 ```
 
-当前测试覆盖：
-
-- schema 扁平模型与校验
-- 多 agent 提取合并逻辑
-- 后台任务去重和状态管理
-- Web/service 层关键流程
+覆盖：schema 扁平模型与校验、多 agent 提取合并、后台任务去重与状态管理。
 
 ---
 
-## 9. 当前人工关节数据集示例
+## 10. 常见问题
 
-当前已整理的 schema：
+**Windows 浏览器打不开 WSL 里的 `localhost:8000`** — WSL 的 localhost 转发偶发异常。用 `hostname -I` 取 WSL IP，改用 `http://<WSL_IP>:8000`；`menu.py` 会自动提示该地址。
 
-```text
-人工关节摩擦磨损_clean_v1
-```
+**端口被占用** — `menu.py` 会从 `WEB_PORT` 起找可用端口并提示；也可手动改 `--port`。
 
-它聚焦：
+**提取任务大量失败、报 429 / 限速** — 调低 `LLM_MAX_INFLIGHT` 和 `EXTRACT_CONCURRENCY`；确认没有用多 worker 启动。
 
-- 人工关节材料
-- 组件类型
-- 摩擦副
-- 表面处理/涂层
-- 润滑介质
-- 载荷、速度、循环数
-- 摩擦系数
-- 磨损率/磨损体积/线性磨损
-- 表面损伤、磨屑和取出物分析
-- 模拟结果
+**`'GeneratedSchema' object has no attribute ...'` 之类属性报错** — 代码版本不一致：`git pull` 到最新、清 `__pycache__`、重启网页服务。
 
-一次全量验证结果：
+**导出中文文件名乱码 / 报错** — 已用 `filename*=` UTF-8 编码，中文文件名可正常下载。
 
-```text
-total papers: 1371
-success: 1365
-skipped: 6
-records: 5310
-```
+**数据要不要提交 Git** — 不需要。只提交代码、`.env.example`、文档和测试。
