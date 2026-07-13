@@ -52,6 +52,7 @@ class ExtractionService:
         merger_role: str = None,
         reviewer_role: str = None,
         review_enabled: bool = None,
+        keep_candidates: bool = False,
     ):
         self.logger = logger.bind(module="ExtractionService")
         if schema is None:
@@ -94,6 +95,7 @@ class ExtractionService:
                 reviewer_client=reviewer_client,
                 reviewer_role=reviewer_role or "extract_reviewer",
                 review_enabled=bool(review_enabled),
+                keep_candidates=keep_candidates,
             )
             self.mode = "flat_multi_agent"
             self.llm_client = merger_client

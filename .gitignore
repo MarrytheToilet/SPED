@@ -143,3 +143,6 @@ Thumbs.db
 docs/_build/
 docs/.doctrees/
 site/
+
+# Manuscript / paper working directory — not published to the code repo
+paper/

@@ -210,6 +210,7 @@ class MultiAgentFlatMode(GenericFlatMode):
         reviewer_client=None,
         reviewer_role: str = "extract_reviewer",
         review_enabled: bool = True,
+        keep_candidates: bool = False,
     ):
         # GenericFlatMode needs one llm_client for base initialization; use merger as the owner client.
         super().__init__(merger_client, schema)
@@ -219,6 +220,9 @@ class MultiAgentFlatMode(GenericFlatMode):
         self.reviewer_client = reviewer_client
         self.reviewer_role = reviewer_role
         self.review_enabled = review_enabled
+        # 溯源开关：在 metadata 中保留每个 extractor 的候选 records，
+        # 供消融实验/置信度特征（agent 一致性）使用；默认关闭避免结果文件膨胀。
+        self.keep_candidates = keep_candidates
 
     @property
     def mode_name(self) -> str:
@@ -403,6 +407,11 @@ class MultiAgentFlatMode(GenericFlatMode):
                 "successful_agents": [only["role"]],
                 "agent_errors": errors,
             })
+            if self.keep_candidates:
+                reviewed.metadata["candidates"] = [
+                    {"role": x["role"], "model": x["model"], "records": x["records"]}
+                    for x in candidate_outputs
+                ]
             return reviewed
 
         merged = self._merge_records(paper_id, content, candidate_outputs)
@@ -414,4 +423,9 @@ class MultiAgentFlatMode(GenericFlatMode):
             "agent_errors": errors,
             "candidate_counts": {x["role"]: x["count"] for x in candidate_outputs},
         })
+        if self.keep_candidates:
+            merged.metadata["candidates"] = [
+                {"role": x["role"], "model": x["model"], "records": x["records"]}
+                for x in candidate_outputs
+            ]
         return merged
